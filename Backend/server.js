@@ -11,7 +11,10 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const guidanceRoutes = require('./routes/guidanceRoutes');
-connectDB();
+connectDB().catch(err => {
+  console.error('MongoDB connection failed:', err.message);
+  process.exit(1);
+});
 
 const app = express();
 
