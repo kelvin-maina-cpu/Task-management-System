@@ -36,11 +36,16 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guidance', guidanceRoutes);
 
-// TEST ROUTE - Remove after testing
-app.post('/api/test-enroll/:id', (req, res) => {
-  console.log('TEST ENROLL HIT:', req.params.id);
-  res.json({ success: true, message: 'Test route works' });
+// Health check for Render
+app.get('/', (req, res) => {
+  res.json({ message: 'Task Management API Live!', status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Remove test route in production
+// app.post('/api/test-enroll/:id', (req, res) => {
+  // console.log('TEST ENROLL HIT:', req.params.id);
+  // res.json({ success: true, message: 'Test route works' });
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
