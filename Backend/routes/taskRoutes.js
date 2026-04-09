@@ -1,57 +1,20 @@
 
-const express = require("express");
-const Task = require("../models/Task");
+const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const tasksController = require('../controllers/tasksController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// All routes protected
-router.use(requireAuth);
+// All routes protected  
+router.use(authMiddleware);
 
-// Get all tasks
-router.get("/", async (req, res) => {
-  try {
-    const tasks = await Task.find();
-    res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+// Get user's tasks (filtered)
+router.get('/', tasksController.getUserTasks);
 
-// Create a task
-router.post("/", async (req, res) => {
-  try {
-    const task = await Task.create(req.body);
-    res.status(201).json(task);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+// Create task (user verified project access)
+router.post('/', tasksController.createTask);
    
-// Update a task
-router.put("/:id", async (req, res) => {
-  try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-    res.json(task);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-router.delete("/:id", async (req, res) => {
-  try {
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-    res.json({ message: "Task deleted" });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+// Update task (user verified access)
+router.put('/:id', tasksController.updateTask);
+router.delete('/:id', tasksController.deleteTask);
+
 module.exports = router;

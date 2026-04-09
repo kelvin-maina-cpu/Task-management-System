@@ -5,15 +5,19 @@ const mongoose = require('mongoose');
 exports.getProjectSuggestions = async (req, res) => {
   try {
     const { difficulty, stack, domain } = req.query;
+    console.log('🔍 getProjectSuggestions:', { difficulty, stack, domain });
+    
     const filter = { isTemplate: true };
     
     if (difficulty) filter.difficulty = difficulty;
     if (domain) filter.domain = domain;
 
     const projects = await Project.find(filter).limit(30);
+    console.log('✅ Found templates:', projects.length, projects.map(p => ({title: p.title, _id: p._id})));
+    
     res.json(projects);
   } catch (error) {
-    console.error('getProjectSuggestions error:', error);
+    console.error('💥 getProjectSuggestions error:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -242,37 +246,228 @@ exports.rateProject = async (req, res) => {
 // PUT /api/projects/:id/milestones/:milestoneId
 exports.updateMilestone = async (req, res) => {
   try {
-    const { id, milestoneId } = req.params;
-    const { status } = req.body;
-    const userId = req.user.userId;
+    const { id: projectId, milestoneId } = req.params;
+    const { status, completed } = req.body;
 
-    const project = await Project.findOne({ 
-      _id: id, 
-      'enrolledUsers.user': userId 
-    });
-
+    const project = await Project.findById(projectId);
     if (!project) {
-      return res.status(404).json({ error: 'Project or enrollment not found' });
+      return res.status(404).json({ error: 'Project not found' });
     }
 
-    const enrollment = project.enrolledUsers.find(
-      e => e.user.toString() === userId
+    // Find user's enrollment
+    const enrollmentIndex = project.enrolledUsers.findIndex(
+      e => e.user.toString() === req.user.userId.toString()
     );
 
-    if (status === 'completed') {
-      const milestoneNum = parseInt(milestoneId);
-      if (!enrollment.completedMilestones.includes(milestoneNum)) {
-        enrollment.completedMilestones.push(milestoneNum);
-      }
-      enrollment.currentMilestone = Math.max(enrollment.currentMilestone, milestoneNum + 1);
+    if (enrollmentIndex === -1) {
+      return res.status(400).json({ error: 'Not enrolled in this project' });
     }
 
-    enrollment.lastActivity = new Date();
+    const enrollment = project.enrolledUsers[enrollmentIndex];
+    const milestoneOrder = parseInt(milestoneId);
+
+    if (status === 'completed' && !enrollment.completedMilestones.includes(milestoneOrder)) {
+      enrollment.completedMilestones.push(milestoneOrder);
+      enrollment.completedMilestones.sort((a, b) => a - b);
+      
+      // Update current milestone to next one
+      const totalMilestones = project.milestones?.length || 0;
+      if (milestoneOrder < totalMilestones) {
+        enrollment.currentMilestone = milestoneOrder + 1;
+      }
+      
+      // Update enrollment status
+      if (milestoneOrder === totalMilestones) {
+        enrollment.status = 'completed';
+        project.completionCount = (project.completionCount || 0) + 1;
+      } else if (enrollment.status === 'enrolled') {
+        enrollment.status = 'in-progress';
+      }
+    }
+
     await project.save();
 
-    res.json(project);
+    res.json({
+      success: true,
+      message: 'Milestone updated successfully',
+      enrollment: {
+        currentMilestone: enrollment.currentMilestone,
+        completedMilestones: enrollment.completedMilestones,
+        status: enrollment.status
+      }
+    });
   } catch (error) {
+    console.error('Update milestone error:', error);
     res.status(500).json({ error: error.message });
   }
 };
+
+// MISSING METHODS FROM projectcontroller.js - MERGED
+exports.getAllMyProjects = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Query 1: Created projects
+    const createdQuery = { createdBy: userId };
+    const createdProjects = await Project.find(createdQuery)
+      .select('title slug description difficulty domain estimatedDuration suggestedStacks milestones averageRating createdAt updatedAt')
+      .lean();
+
+    // Query 2: Enrolled projects
+    const enrolledQuery = { 'enrolledUsers.user': userId };
+    const enrolledProjectsRaw = await Project.find(enrolledQuery)
+      .select('title slug description difficulty domain estimatedDuration suggestedStacks milestones enrolledUsers averageRating createdAt updatedAt')
+      .lean();
+
+    // Map enrolled with user enrollment data
+    const enrolledProjects = enrolledProjectsRaw.map(project => {
+      const enrollment = project.enrolledUsers.find(
+        e => e.user.toString() === userId
+      );
+      return {
+        _id: project._id,
+        title: project.title,
+        slug: project.slug,
+        description: project.description,
+        difficulty: project.difficulty,
+        domain: project.domain,
+        estimatedDuration: project.estimatedDuration,
+        suggestedStacks: project.suggestedStacks,
+        milestones: project.milestones,
+        averageRating: project.averageRating,
+        enrollment: {
+          currentMilestone: enrollment?.currentMilestone || 0,
+          completedMilestones: enrollment?.completedMilestones || [],
+          chosenStack: enrollment?.chosenStack,
+          status: enrollment?.status || 'enrolled',
+          enrolledAt: enrollment?.enrolledAt,
+          repositoryUrl: enrollment?.repositoryUrl,
+          deployedUrl: enrollment?.deployedUrl
+        },
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        isCreated: false
+      };
+    });
+
+    // Combine and dedupe
+    const allIds = new Set();
+    const allProjects = [];
+
+    [...createdProjects.map(p => ({...p, isCreated: true})), ...enrolledProjects].forEach(project => {
+      if (!allIds.has(project._id.toString())) {
+        allIds.add(project._id.toString());
+        allProjects.push(project);
+      }
+    });
+
+    allProjects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    res.json({
+      success: true,
+      count: allProjects.length,
+      data: allProjects
+    });
+  } catch (error) {
+    console.error('Get all my projects error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.createProject = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    const existingProject = await Project.findOne({ 
+      title: title.trim(), 
+      createdBy: req.user.userId 
+    });
+
+    if (existingProject) {
+      return res.status(400).json({ message: 'Project with this title already exists' });
+    }
+
+    const project = await Project.create({
+      title: title.trim(),
+      description: description?.trim(),
+      createdBy: req.user.userId
+    });
+
+    res.status(201).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateProject = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const userId = req.user.userId;
+    
+    const updateFields = {};
+    if (title !== undefined) updateFields.title = title.trim();
+    if (description !== undefined) updateFields.description = description.trim();
+
+    if (title) {
+      const existing = await Project.findOne({
+        title: title.trim(),
+        createdBy: userId,
+        _id: { $ne: req.params.id }
+      });
+      
+      if (existing) {
+        return res.status(400).json({ message: 'Another project with this title exists' });
+      }
+    }
+
+    const mongoose = require('mongoose');
+    const project = await Project.findOneAndUpdate(
+      { 
+        _id: req.params.id, 
+        createdBy: new mongoose.Types.ObjectId(userId)
+      },
+      updateFields,
+      { new: true, runValidators: true }
+    );
+
+    if (!project) {
+      const exists = await Project.findById(req.params.id);
+      if (!exists) return res.status(404).json({ message: 'Project not found' });
+      return res.status(403).json({ message: 'Not authorized to edit this project' });
+    }
+
+    res.json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    console.error('updateProject error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteProject = async (req, res) => {
+  try {
+    const project = await Project.findOneAndDelete({
+      _id: req.params.id,
+      createdBy: req.user.userId
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Project deleted successfully',
+      data: project._id
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 

@@ -107,22 +107,7 @@ const projectSchema = new mongoose.Schema({
   },
   
   // Technical Architecture
-  databaseSchema: {
-    entities: [{
-      name: String,
-      fields: [{
-        name: String,
-        type: String,
-        required: Boolean,
-        description: String
-      }],
-      relationships: [{
-        with: String,
-        type: { type: String, enum: ['one-to-one', 'one-to-many', 'many-to-many'] }
-      }]
-    }],
-    erDiagram: String
-  },
+databaseSchema: mongoose.Schema.Types.Mixed,
   
   apiEndpoints: [{
     method: { type: String, enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] },

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const { generateAccessToken, generateRefreshToken } = require('../config/tokens');
@@ -22,19 +23,16 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
+    // Create user - model pre-save hashes password
     const user = await User.create({
       email,
-      password: hashedPassword,
+      password,
       name,
       role: 'user'
     });
 
-    // ✅ Debug: Check user object before token generation
-    console.log('User created:', { _id: user._id, email: user.email, role: user.role, tokenVersion: user.tokenVersion });
+    // Debug: Check user object before token generation
+    console.log('User created:', { _id: user._id, email: user.email, role: user.role });
 
     // Generate tokens
     const accessToken = generateAccessToken(user);
@@ -165,12 +163,33 @@ exports.logout = async (req, res) => {
 // Get current user (requires authentication)
 exports.getMe = async (req, res) => {
   try {
-    // req.user is set by authMiddleware
-    const user = await User.findById(req.user.userId);
+    // 🔍 Detailed logging to debug 500 error
+    console.log('🔍 getMe called:', {
+      userId: req.user?.userId,
+      userIdType: typeof req.user?.userId,
+      userIdValid: mongoose.Types.ObjectId.isValid(req.user?.userId),
+      fullUser: req.user
+    });
+
+    if (!req.user?.userId) {
+      console.error('❌ No userId in req.user:', req.user);
+      return res.status(401).json({ error: 'No user ID in token' });
+    }
+
+    const userIdStr = req.user.userId.toString();
+    if (!mongoose.Types.ObjectId.isValid(userIdStr)) {
+      console.error('❌ Invalid ObjectId format:', userIdStr);
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+
+    const user = await User.findById(userIdStr).select('name email role');
     
     if (!user) {
+      console.error('❌ User not found for ID:', userIdStr);
       return res.status(404).json({ error: 'User not found' });
     }
+
+    console.log('✅ User found:', { id: user._id, email: user.email, role: user.role });
 
     res.json({
       id: user._id,
@@ -179,7 +198,24 @@ exports.getMe = async (req, res) => {
       role: user.role
     });
   } catch (error) {
-    console.error('Get me error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('💥 GetMe ERROR DETAILS:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      userId: req.user?.userId,
+      isCastError: error.name === 'CastError',
+      isValidationError: error.name === 'ValidationError'
+    });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+    
+    res.status(500).json({ error: 'Server error', details: process.env.NODE_ENV === 'development' ? error.message : 'Internal error' });
   }
 };
+

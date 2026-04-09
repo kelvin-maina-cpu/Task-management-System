@@ -1,6 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '../../app/baseQuery';
-import { setCredentials, logout } from './authSlice';
 
 interface User {
   id: string;
@@ -22,21 +21,21 @@ export const authApi = createApi({
 
     login: builder.mutation<AuthResponse, { email: string; password: string }>({
       query: (credentials) => ({
-        url: '/login',
+        url: '/auth/login',
         method: 'POST',
         body: credentials,
       }),
     }),
     register: builder.mutation<AuthResponse, { name: string; email: string; password: string }>({
       query: (userData) => ({
-        url: '/register',
+        url: '/auth/register',
         method: 'POST',
         body: userData,
       }),
     }),
     logout: builder.mutation<void, void>({
       query: () => ({
-        url: '/logout',
+        url: '/auth/logout',
         method: 'POST',
       }),
     }),

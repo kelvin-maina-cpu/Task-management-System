@@ -95,6 +95,13 @@ export const dashboardApi = createApi({
       queryFn: async () => ({ data: undefined }),
       invalidatesTags: ['Dashboard', 'Activity'],
     }),
+    getInitialData: builder.query<any, { projectId?: string }>({
+      query: ({ projectId }) => ({
+        url: '/dashboard/initial-data',
+        params: projectId ? { projectId } : undefined
+      }),
+      providesTags: ['Dashboard'],
+    }),
   }),
 });
 
@@ -102,5 +109,6 @@ export const {
   useGetDashboardStatsQuery,
   useGetRecentActivityQuery,
   useRefreshDashboardMutation,
+  useGetInitialDataQuery,
 } = dashboardApi;
 

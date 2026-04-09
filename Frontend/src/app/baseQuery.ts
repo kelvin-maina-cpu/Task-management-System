@@ -1,4 +1,3 @@
-
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './store';
 
@@ -22,7 +21,9 @@ const baseQueryFn = fetchBaseQuery({
 // Export default base query
 export const baseQuery = baseQueryFn;
 
-// Base query with token refresh capability
+// Base query with token refresh capability + deduplication
+let refreshPromise: Promise<any> | null = null;
+
 export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await baseQueryFn(args, api, extraOptions);
 
@@ -30,16 +31,31 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
   if (result.error && (result.error.status === 401 || result.error.status === 403)) {
     console.log('Token expired/invalid, attempting refresh...');
     
-    // Try to refresh the token - IMPORTANT: include credentials (cookies) for refresh to work
-    const refreshResult = await baseQueryFn(
-      { 
-        url: '/auth/refresh', 
-        method: 'POST',
-        credentials: 'include'  // This ensures cookies are sent with the refresh request
-      },
-      api,
-      extraOptions
-    );
+    if (refreshPromise) {
+      console.log('Refresh already in progress, waiting...');
+      await refreshPromise;
+      // Retry original request after refresh completes
+      result = await baseQueryFn(args, api, extraOptions);
+      return result;
+    }
+    
+    refreshPromise = (async () => {
+      try {
+        return await baseQueryFn(
+          {
+            url: '/auth/refresh',
+            method: 'POST',
+            credentials: 'include',
+          },
+          api,
+          extraOptions
+        );
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    const refreshResult = await refreshPromise;
 
     if (refreshResult.data) {
       const { accessToken } = refreshResult.data as { accessToken: string };
@@ -62,4 +78,5 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
 
   return result;
 };
+
 

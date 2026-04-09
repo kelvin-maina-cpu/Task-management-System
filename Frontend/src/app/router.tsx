@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from './store';
 import { LandingPage } from '../features/landing/LandingPage';
+import { BeginnerGuidePage } from '../features/beginner/BeginnerGuidePage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { SignupPage } from '../features/auth/pages/SignupPage';
 import { ProjectSuggestions } from '../features/projects/ProjectSuggestions';
@@ -13,6 +14,8 @@ import { AdminLayout } from '../features/admin/AdminLayout';
 import { ProjectApproval } from '../features/admin/ProjectApproval';
 import { MainLayout } from '../components/layout/MainLayout';
 import { ProjectWorkspace } from '../features/guidance/ProjectWorkspace';
+import { EditProjectPage } from '../features/projects/EditProjectPage';
+import MyProjectsPage from '../features/projects/MyProjectsPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,41 +28,43 @@ const ROLE_HIERARCHY: Record<string, number> = {
   user: 1,
 };
 
-// ✅ Protected route - redirects to login if not authenticated
 export const ProtectedRoute = ({ children, requiredRole = 'user' }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   if (requiredRole && user) {
     const userLevel = ROLE_HIERARCHY[user.role] || 0;
     const requiredLevel = ROLE_HIERARCHY[requiredRole] || 1;
-    
+
     if (userLevel < requiredLevel) {
       return <Navigate to="/dashboard" replace />;
     }
   }
-  
+
   return <>{children}</>;
 };
 
-// ✅ Public route - redirects to dashboard if already authenticated
 export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />, // ✅ Landing page is always accessible
+    element: <LandingPage />,
+  },
+  {
+    path: '/beginner',
+    element: <BeginnerGuidePage />,
   },
   {
     path: '/login',
@@ -110,8 +115,21 @@ export const router = createBrowserRouter([
         element: <ProjectWorkspace />,
       },
       {
-        path: 'my-projects',
-        element: <MyProjectsPage />,
+        path: 'projects',
+        children: [
+          {
+            index: true,
+            element: <MyProjectsPage />,
+          },
+          {
+            path: ':id',
+            element: <ProjectDetailPage />,
+          },
+          {
+            path: ':id/edit',
+            element: <EditProjectPage />,
+          },
+        ],
       },
     ],
   },
@@ -134,7 +152,3 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
-
-import MyProjectsPage from '../features/projects/MyProjectsPage';  // ✅ Import
-
-

@@ -7,11 +7,12 @@ import { router } from './app/router';
 import { setCredentials } from './features/auth/authSlice';
 import { useGetCurrentUserQuery } from './features/auth/authApi';
 import './index.css';
+import './styles/loader.css';
 
 // Component to initialize auth state when page loads
 const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('accessToken');
-  const { data: user, isLoading } = useGetCurrentUserQuery(undefined, {
+  const { data: user } = useGetCurrentUserQuery(undefined, {
     skip: !token,
   });
 
@@ -43,4 +44,3 @@ createRoot(document.getElementById('root')!).render(
     </Provider>
   </StrictMode>
 );
-

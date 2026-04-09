@@ -1,39 +1,27 @@
-# Task Management System - Auth Fix Progress
+# Fix: seedRealProjects not visible on project page
 
-## Current Status: ✅ Phase 1 COMPLETE - 🔧 tokens.js fixed | ⏳ Testing register/login
+## Status: ✅ In Progress
 
-### ✅ Phase 1: Enhanced Logging & Error Differentiation [COMPLETE]
+### Step 1: Execute seed script ✅ **SUCCESS** ✓\n**Terminal**: "Successfully seeded 8 detailed projects"\n**DB**: Cleared templates + inserted 8 (3 Beginner Web, 3 Intermediate Web, 2 Advanced)
 
-- [x] Create TODO.md
-- [x] Backend/middleware/authMiddleware.js - Add specific JWT error handling
-- [x] Backend/config/tokens.js - Log secret presence (syntax fixed)
-- [x] Backend/controllers/authController.js - Add refresh logging
+```bash
+cd Backend && node scripts/seedRealProjects.js
+```
 
-### 🔄 Phase 1.5: Backend Testing [IN PROGRESS]
+Expected: "Successfully seeded 8 detailed projects"
 
-- [ ] Restart Backend → Verify 🔑 JWT Config logs
-- [ ] Test register → See "Register body" logs
-- [ ] Test login → Get token
-- [ ] Test /api/auth/me → See 🔴 JWT Verification details
+### Step 2: Verify API 🔄 **TESTING API** (run ThunderClient GET /api/projects/suggestions)
 
-### ⏳ Phase 2: RTK Query Architecture Fix
+Test: GET /api/projects/suggestions → should return 8+ template projects
 
-- [ ] Frontend/src/features/auth/authApi.ts - Remove duplicate baseQueryWithReauth
-- [ ] Verify all APIs use single shared baseQuery
+### Step 3: Test Frontend ✅ **DO THIS NOW**\n✅ Navigate Projects page → "Available Templates" shows 8 projects\n✅ Titles: SaaS Billing, Collaborative Editor, Content Moderation, Portfolio, Weather, Task App, E-Commerce, Chat
 
-### ⏳ Phase 3: Token Persistence & Flow Fixes
+- Navigate to Projects page (MyProjectsPage)
+- Confirm "Available Templates" section shows seeded projects
+- Templates: SaaS Billing, Collaborative Editor, etc.
 
-- [ ] Ensure login/register dispatch setCredentials
-- [ ] Test full auth flow end-to-end
+### Step 4: Complete [PENDING]
 
-### ⏳ Phase 4: Backend Route Protection Audit
+- Remove this TODO.md or mark ✅
 
-- [ ] Consistent authMiddleware application
-
-### ⏳ Phase 5: Testing & Validation
-
-- [ ] Test login → /me → enrollment
-- [ ] Test token refresh (manual expiry)
-- [ ] Production hardening
-
-**Next Action**: Implement Phase 1 logging changes, restart backend, test & capture new console output.
+**Note**: Seeded projects are templates (`isTemplate: true`), shown in "Available Templates". User projects in "My Personal Projects". This is correct design.

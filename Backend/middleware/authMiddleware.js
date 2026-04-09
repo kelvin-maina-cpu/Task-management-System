@@ -11,7 +11,15 @@ const authMiddleware = function(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-
+    
+    // ✅ Success logging
+    console.log('✅ Auth middleware success:', {
+      userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      exp: decoded.exp
+    });
+    
     req.user = decoded; // attach user info to request
     next();
   } catch (error) {

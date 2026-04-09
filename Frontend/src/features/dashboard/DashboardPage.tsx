@@ -1,6 +1,6 @@
 import { useGetDashboardStatsQuery, useGetRecentActivityQuery } from './dashboardApi';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 

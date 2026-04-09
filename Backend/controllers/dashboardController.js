@@ -225,3 +225,80 @@ exports.getRecentActivity = async (req, res) => {
   }
 };
 
+// GET /api/dashboard/initial-data - Batch endpoint for dashboard load
+exports.getInitialData = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const projectId = req.query.projectId;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const now = new Date();
+
+    // 1. User profile (/auth/me equivalent)
+    const user = await User.findById(userId).select('name email role avatar');
+
+    // 2. My projects list (like /projects/my-projects)
+    const myProjects = await Project.find({
+      $or: [
+        { members: userObjectId },
+        { createdBy: userObjectId }
+      ]
+    }).populate('members', 'name email avatar').sort({ updatedAt: -1 }).limit(10);
+
+    // 3. Selected project detail (optional)
+    let selectedProject = null;
+    if (projectId) {
+      selectedProject = await Project.findById(projectId).populate('members', 'name email avatar');
+    }
+
+    // 4. Dashboard stats (reusing existing logic)
+    const projectIds = myProjects.map(p => p._id);
+    const tasks = await Task.find({ project: { $in: projectIds } })
+      .populate('assignee', 'name email avatar')
+      .populate('project', 'title')
+      .sort({ updatedAt: -1 });
+
+    const taskStats = calculateTaskStats(tasks);
+    const dueSoon = tasks.filter(t => {
+      if (!t.dueDate || t.status === 'completed') return false;
+      const due = new Date(t.dueDate);
+      return due >= now && due <= new Date(now + 7 * 24 * 60 * 60 * 1000);
+    });
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      },
+      myProjects: myProjects.map(p => ({
+        id: p._id,
+        title: p.title,
+        description: p.description,
+        status: p.status,
+        progress: calculateProjectProgress(tasks, p._id),
+        memberCount: p.members.length,
+        createdAt: p.createdAt
+      })),
+      selectedProject: selectedProject ? {
+        id: selectedProject._id,
+        title: selectedProject.title,
+        description: selectedProject.description,
+        status: selectedProject.status,
+        members: selectedProject.members
+      } : null,
+      stats: {
+        totalProjects: myProjects.length,
+        totalTasks: taskStats.total,
+        completedTasks: taskStats.completed,
+        tasksDueSoon: dueSoon.length
+      }
+    });
+  } catch (error) {
+    console.error('Initial data error:', error);
+    res.status(500).json({ error: 'Failed to fetch initial data' });
+  }
+};
+
+

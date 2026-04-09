@@ -1,0 +1,422 @@
+{
+  "version": "1.0.0",
+  "name": "Task-Management Full API Tests",
+  "folder": true,
+  "folders": [
+    {
+      "name": "Auth",
+      "color": "green",
+      "requests": [
+        {
+          "id": "1",
+          "name": "Register User",
+          "url": "http://localhost:5000/api/auth/register",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test{{Math.random()}}@example.com\",\n  \"password\": \"password123\"\n}",
+            "options": {"raw": {"language": "json"}}
+          }
+        },
+        {
+          "id": "2",
+          "name": "Login",
+          "url": "http://localhost:5000/api/auth/login",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+            "options": {"raw": {"language": "json"}}
+          }
+        },
+        {
+          "id": "3",
+          "name": "Get Me (Authenticated)",
+          "url": "http://localhost:5000/api/auth/me",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "4",
+          "name": "Logout",
+          "url": "http://localhost:5000/api/auth/logout",
+          "method": "POST",
+          "auth": {"type": "cookie"}
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "color": "blue",
+      "requests": [
+        {
+          "id": "5",
+          "name": "GET /api/dashboard/stats",
+          "url": "http://localhost:5000/api/dashboard/stats",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "6",
+          "name": "GET /api/dashboard/activity",
+          "url": "http://localhost:5000/api/dashboard/activity",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "7",
+          "name": "GET /api/dashboard/initial-data",
+          "url": "http://localhost:5000/api/dashboard/initial-data",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "color": "orange",
+      "requests": [
+        {
+          "id": "8",
+          "name": "GET /api/projects/suggestions",
+          "url": "http://localhost:5000/api/projects/suggestions",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "9",
+          "name": "GET /api/projects/my-projects",
+          "url": "http://localhost:5000/api/projects/my-projects",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "10",
+          "name": "GET /api/projects/all-my-projects",
+          "url": "http://localhost:5000/api/projects/all-my-projects",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "11",
+          "name": "POST /api/projects/",
+          "url": "http://localhost:5000/api/projects/",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\n  \"title\": \"Test Project\",\n  \"description\": \"Test desc\",\n  \"technologies\": [\"React\", \"Node\"]\n}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "12",
+          "name": "GET /api/projects/:id (replace :id)",
+          "url": "http://localhost:5000/api/projects/test-id",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "13",
+          "name": "PUT /api/projects/:id",
+          "url": "http://localhost:5000/api/projects/test-id",
+          "method": "PUT",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "14",
+          "name": "DELETE /api/projects/:id",
+          "url": "http://localhost:5000/api/projects/test-id",
+          "method": "DELETE",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "15",
+          "name": "POST /api/projects/:id/enroll",
+          "url": "http://localhost:5000/api/projects/test-id/enroll",
+          "method": "POST",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "16",
+          "name": "POST /api/projects/:id/rate",
+          "url": "http://localhost:5000/api/projects/test-id/rate",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"rating\": 5}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "17",
+          "name": "PUT /api/projects/:id/milestones/:milestoneId",
+          "url": "http://localhost:5000/api/projects/test-id/milestones/test-milestone",
+          "method": "PUT",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "color": "purple",
+      "requests": [
+        {
+          "id": "18",
+          "name": "GET /api/tasks/",
+          "url": "http://localhost:5000/api/tasks/",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "19",
+          "name": "POST /api/tasks/",
+          "url": "http://localhost:5000/api/tasks/",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\n  \"title\": \"Test Task\",\n  \"description\": \"Test desc\"\n}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "20",
+          "name": "PUT /api/tasks/:id",
+          "url": "http://localhost:5000/api/tasks/test-task-id",
+          "method": "PUT",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "21",
+          "name": "DELETE /api/tasks/:id",
+          "url": "http://localhost:5000/api/tasks/test-task-id",
+          "method": "DELETE",
+          "auth": {"type": "cookie"}
+        }
+      ]
+    },
+    {
+      "name": "Guidance",
+      "color": "red",
+      "requests": [
+        {
+          "id": "22",
+          "name": "POST /api/guidance/ai-assist",
+          "url": "http://localhost:5000/api/guidance/ai-assist",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"prompt\": \"Help with React\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "23",
+          "name": "POST /api/guidance/analyze-progress",
+          "url": "http://localhost:5000/api/guidance/analyze-progress",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"projectId\": \"test-project\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "24",
+          "name": "POST /api/guidance/code-review",
+          "url": "http://localhost:5000/api/guidance/code-review",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"code\": \"console.log('hello')\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "25",
+          "name": "GET /api/guidance/chat-history/:projectId",
+          "url": "http://localhost:5000/api/guidance/chat-history/test-project",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "26",
+          "name": "POST /api/guidance/architecture",
+          "url": "http://localhost:5000/api/guidance/architecture",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"projectId\": \"test-project\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "27",
+          "name": "GET /api/guidance/learning-path/:projectId",
+          "url": "http://localhost:5000/api/guidance/learning-path/test-project",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "28",
+          "name": "GET /api/guidance/mentor-matches/:projectId",
+          "url": "http://localhost:5000/api/guidance/mentor-matches/test-project",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "29",
+          "name": "POST /api/guidance/request-mentor",
+          "url": "http://localhost:5000/api/guidance/request-mentor",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"projectId\": \"test-project\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "30",
+          "name": "POST /api/guidance/accept-mentor",
+          "url": "http://localhost:5000/api/guidance/accept-mentor",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"mentorId\": \"test-mentor\", \"projectId\": \"test-project\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "31",
+          "name": "GET /api/guidance/mentorships",
+          "url": "http://localhost:5000/api/guidance/mentorships",
+          "method": "GET",
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "32",
+          "name": "POST /api/guidance/schedule-session",
+          "url": "http://localhost:5000/api/guidance/schedule-session",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"mentorId\": \"test-mentor\", \"time\": \"2024-01-01T10:00:00Z\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "33",
+          "name": "POST /api/guidance/complete-session",
+          "url": "http://localhost:5000/api/guidance/complete-session",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"sessionId\": \"test-session\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        },
+        {
+          "id": "34",
+          "name": "POST /api/guidance/feedback",
+          "url": "http://localhost:5000/api/guidance/feedback",
+          "method": "POST",
+          "header": [
+            {"name": "Content-Type", "value": "application/json"}
+          ],
+          "body": {
+            "type": "raw",
+            "raw": "{\"sessionId\": \"test-session\", \"rating\": 5, \"comment\": \"Great!\"}",
+            "options": {"raw": {"language": "json"}}
+          },
+          "auth": {"type": "cookie"}
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "color": "gray",
+      "requests": [
+        {
+          "id": "35",
+          "name": "Root Health",
+          "url": "http://localhost:5000/",
+          "method": "GET"
+        }
+      ]
+    }
+  ],
+  "clientId": "task-mgmt-test"
+}

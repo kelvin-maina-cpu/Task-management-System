@@ -1,9 +1,28 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetProjectByIdQuery, useEnrollInProjectMutation, type Project, type TechStack } from './projectsApi';
+import {
+  useGetProjectByIdQuery,
+  useEnrollInProjectMutation,
+  type ApiEndpoint,
+  type DatabaseEntity,
+  type Enrollment,
+  type Milestone,
+  type Project,
+  type Requirement,
+  type ResourceLink,
+  type TechStack,
+} from './projectsApi';
 import { useState } from 'react';
 import { StackSelector } from './components/StackSelector';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../app/store';
+
+const getEnrollmentUserId = (enrollment: Enrollment) => {
+  if (typeof enrollment.user === 'string') {
+    return enrollment.user;
+  }
+
+  return enrollment.user?._id?.toString() || '';
+};
 
 // Loading skeleton component
 const ProjectDetailSkeleton = () => (
@@ -28,11 +47,15 @@ export const ProjectDetailPage = () => {
   // Get current user from Redux store
   const { user } = useSelector((state: RootState) => state.auth);
 
+  const [, setIsTransitioning] = useState(false);
+
   const handleEnroll = async () => {
     if (!selectedStack) {
       alert('Please select a technology stack first');
       return;
     }
+
+    setIsTransitioning(true);
 
     console.log('Starting enrollment...', { projectId, stack: selectedStack.name });
 
@@ -43,7 +66,12 @@ export const ProjectDetailPage = () => {
       }).unwrap();
       
       console.log('✅ Success:', result);
-      navigate(`/projects/${projectId}/workspace`);
+      
+      // Keep loader visible until navigation
+      // Browser navigation will replace the entire page, showing loader prominently
+      setTimeout(() => {
+        navigate(`/projects/${projectId}/workspace`, { replace: true });
+      }, 3000);
       
     } catch (err: unknown) {
       console.error('❌ Full error object:', err);
@@ -72,6 +100,7 @@ export const ProjectDetailPage = () => {
         errorMsg = err;
       }
       
+      setIsTransitioning(false);
       alert(errorMsg);
     }
   };
@@ -90,18 +119,7 @@ export const ProjectDetailPage = () => {
 
   // Check if current user is already enrolled by comparing user IDs
   const isEnrolled = user && project.enrolledUsers && project.enrolledUsers.some(
-    (e: { user: { _id?: string; toString?: () => string } }) => {
-      const enrolledUserId = e.user?._id?.toString() || e.user?.toString?.() || '';
-      return enrolledUserId === user.id;
-    }
-  );
-
-  // Get user's enrollment data for display
-  const userEnrollment = user && project.enrolledUsers?.find(
-    (e: { user: { _id?: string; toString?: () => string } }) => {
-      const enrolledUserId = e.user?._id?.toString() || e.user?.toString?.() || '';
-      return enrolledUserId === user.id;
-    }
+    (e: Enrollment) => getEnrollmentUserId(e) === user.id
   );
 
   return (
@@ -260,7 +278,7 @@ const ProjectOverview = ({ project }: { project: Project }) => (
             <div>
               <h4 className="font-semibold text-gray-300 mb-2">Functional Requirements</h4>
               <ul className="space-y-2">
-                {project.requirements.functional.map((req, reqIndex) => (
+                {project.requirements.functional.map((req: Requirement, reqIndex: number) => (
                   <li key={`req-${req.asA}-${req.iWant}-${reqIndex}`} className="flex items-start gap-2 bg-slate-800/50 p-3 rounded-lg">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
                       req.priority === 'Must Have' ? 'bg-red-500/20 text-red-400' :
@@ -282,7 +300,7 @@ const ProjectOverview = ({ project }: { project: Project }) => (
             <div>
               <h4 className="font-semibold text-gray-300 mb-2">Non-Functional Requirements</h4>
               <div className="grid gap-2">
-                {project.requirements.nonFunctional.map((req, reqIndex) => (
+                {project.requirements.nonFunctional.map((req, reqIndex: number) => (
                   <div key={`nonfunc-${req.category}-${reqIndex}`} className="bg-slate-800/50 p-3 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-blue-400 text-sm font-medium">{req.category}</span>
@@ -305,7 +323,7 @@ const ProjectOverview = ({ project }: { project: Project }) => (
       <section>
         <h3 className="text-2xl font-bold text-white mb-4">What You'll Learn</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {project.learningOutcomes.map((outcome, outcomeIndex) => (
+          {project.learningOutcomes.map((outcome: string, outcomeIndex: number) => (
             <div key={`outcome-${outcome.substring(0,20)}-${outcomeIndex}`} className="flex items-center gap-2 bg-green-500/10 p-3 rounded-lg border border-green-500/20">
               <span className="text-green-400">✓</span>
               <span className="text-green-300 text-sm">{outcome}</span>
@@ -358,7 +376,7 @@ const ArchitectureSection = ({ project }: { project: Project }) => (
     <h3 className="text-2xl font-bold text-white">Database Schema</h3>
     
     {project.databaseSchema?.entities && project.databaseSchema.entities.length > 0 ? (
-      project.databaseSchema.entities.map((entity) => (
+      project.databaseSchema.entities.map((entity: DatabaseEntity) => (
         <div key={entity.name} className="bg-slate-800/50 border border-white/10 rounded-lg p-4">
           <h4 className="font-bold text-lg text-white mb-3">{entity.name}</h4>
           <table className="w-full text-sm">
@@ -382,7 +400,7 @@ const ArchitectureSection = ({ project }: { project: Project }) => (
           {entity.relationships && entity.relationships.length > 0 && (
             <div className="mt-3 pt-3 border-t border-white/10">
               <span className="text-xs text-gray-500">Relationships: </span>
-              {entity.relationships.map((rel, idx) => (
+              {entity.relationships.map((rel, idx: number) => (
                 <span key={idx} className="text-xs text-blue-400 ml-2">
                   {entity.name} → {rel.type} {rel.with}
                 </span>
@@ -399,7 +417,7 @@ const ArchitectureSection = ({ project }: { project: Project }) => (
     
     {project.apiEndpoints && project.apiEndpoints.length > 0 ? (
       <div className="space-y-2">
-        {project.apiEndpoints.map((endpoint, idx) => (
+        {project.apiEndpoints.map((endpoint: ApiEndpoint, idx: number) => (
           <div key={idx} className="flex items-center gap-4 bg-slate-800/50 p-3 rounded-lg border border-white/10">
             <span className={`px-2 py-1 rounded text-xs font-bold shrink-0 ${
               endpoint.method === 'GET' ? 'bg-green-500/20 text-green-400' :
@@ -435,8 +453,8 @@ const MilestonesSection = ({ project }: { project: Project }) => {
   return (
     <div className="space-y-4">
       {milestones
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map((milestone, idx) => (
+        .sort((a: Milestone, b: Milestone) => (a.order || 0) - (b.order || 0))
+        .map((milestone: Milestone, idx: number) => (
         <div key={idx} className="bg-slate-800/50 border border-white/10 rounded-lg p-6 relative">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-600 rounded-l-lg" />
           
@@ -457,7 +475,7 @@ const MilestonesSection = ({ project }: { project: Project }) => {
               <div>
                 <h4 className="font-semibold text-sm text-gray-300 mb-2">Deliverables</h4>
                 <ul className="space-y-1">
-                  {milestone.deliverables.map((d, i) => (
+                  {milestone.deliverables.map((d: string, i: number) => (
                     <li key={i} className="text-sm text-gray-400 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                       {d}
@@ -471,7 +489,7 @@ const MilestonesSection = ({ project }: { project: Project }) => {
               <div>
                 <h4 className="font-semibold text-sm text-gray-300 mb-2">Learning Outcomes</h4>
                 <ul className="space-y-1">
-                  {milestone.learningOutcomes.map((lo, i) => (
+                  {milestone.learningOutcomes.map((lo: string, i: number) => (
                     <li key={i} className="text-sm text-blue-400 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
                       {lo}
@@ -486,7 +504,7 @@ const MilestonesSection = ({ project }: { project: Project }) => {
             <div className="mt-4 pt-4 border-t border-white/10">
               <h4 className="font-semibold text-sm text-gray-300 mb-2">Resources</h4>
               <div className="flex flex-wrap gap-2">
-                {milestone.resources.map((r, i) => (
+                {milestone.resources.map((r: ResourceLink, i: number) => (
                   <a 
                     key={i}
                     href={r.url} 

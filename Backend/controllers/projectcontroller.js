@@ -421,7 +421,11 @@ const getProjectById = async (req, res) => {
 const updateProject = async (req, res) => {
   try {
     const { title, description } = req.body;
+    const userId = req.user.userId;
     
+    console.log('updateProject - params.id:', req.params.id);
+    console.log('updateProject - req.user.userId:', userId, typeof userId);
+
     const updateFields = {};
     if (title !== undefined) updateFields.title = title.trim();
     if (description !== undefined) updateFields.description = description.trim();
@@ -429,7 +433,7 @@ const updateProject = async (req, res) => {
     if (title) {
       const existing = await Project.findOne({
         title: title.trim(),
-        createdBy: req.user.userId,
+        createdBy: userId,
         _id: { $ne: req.params.id }
       });
       
@@ -438,14 +442,25 @@ const updateProject = async (req, res) => {
       }
     }
 
+    // Get DB createdBy for logging
+    const doc = await Project.findById(req.params.id).select('createdBy');
+    console.log('DB createdBy:', doc?.createdBy, typeof doc?.createdBy?.toString());
+
+    const mongoose = require('mongoose');
     const project = await Project.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user.userId },
+      { 
+        _id: req.params.id, 
+        createdBy: new mongoose.Types.ObjectId(userId)
+      },
       updateFields,
       { new: true, runValidators: true }
     );
 
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      // Distinguish "not found" from "not authorized"
+      const exists = await Project.findById(req.params.id);
+      if (!exists) return res.status(404).json({ message: 'Project not found' });
+      return res.status(403).json({ message: 'Not authorized to edit this project' });
     }
 
     res.json({
@@ -454,12 +469,14 @@ const updateProject = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('updateProject error:', error);
     res.status(500).json({ 
       success: false, 
       message: error.message 
     });
   }
 };
+
 
 // @desc    Get ALL user's projects (created + enrolled)
 // @route   GET /api/projects/all-my-projects

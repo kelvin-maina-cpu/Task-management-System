@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useGetMentorMatchesQuery, useRequestMentorMutation } from './guidanceApi';
-import type { MentorMatch } from './guidanceApi';
 
 interface MentorMatchingProps {
   projectId: string;
@@ -157,8 +156,8 @@ export const MentorMatching = ({ projectId }: MentorMatchingProps) => {
 
               {/* Match Breakdown */}
               <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-                {Object.entries(score.breakdown).map(([key, value]) => (
-                  <div key={key} className={`p-2 rounded ${
+{Object.entries(score.breakdown).map(([key, value]) => (
+                  <div key={`breakdown-${mentor._id}-${key}`} className={`p-2 rounded ${
                     value > 70 ? 'bg-green-100 text-green-800' : 'bg-gray-100'
                   }`}>
                     <div className="font-semibold">{value}%</div>
@@ -170,8 +169,8 @@ export const MentorMatching = ({ projectId }: MentorMatchingProps) => {
               {/* Tech Overlap */}
               {score.techOverlap && score.techOverlap.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {score.techOverlap.map((tech: { name: string }) => (
-                    <span key={tech.name} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+{score.techOverlap.map((tech: { name: string }, idx: number) => (
+                    <span key={`tech-${mentor._id}-${idx}-${tech.name}`} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
                       {tech.name} ✓
                     </span>
                   ))}
@@ -185,8 +184,11 @@ export const MentorMatching = ({ projectId }: MentorMatchingProps) => {
                     <div>
                       <h4 className="font-semibold mb-2">Expertise</h4>
                       <div className="flex flex-wrap gap-2">
-                        {mentor.expertise?.map((skill) => (
-                          <span key={skill} className="px-2 py-1 bg-gray-100 rounded text-sm">
+{mentor.expertise?.map((skill, idx) => (
+                          <span 
+                            key={`expertise-${mentor._id}-${idx}-${skill}`} 
+                            className="px-2 py-1 bg-gray-100 rounded text-sm"
+                          >
                             {skill}
                           </span>
                         )) || <span className="text-gray-400">General</span>}

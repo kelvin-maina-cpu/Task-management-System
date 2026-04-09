@@ -1,221 +1,176 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '../../app/baseQuery';
 
-// Milestone Schema Types
-export interface Milestone {
-  _id?: string;
-  title: string;
-  description?: string;
-  order: number;
-  estimatedHours?: number;
-  learningOutcomes?: string[];
-  deliverables?: string[];
-  resources?: {
-    title: string;
-    url: string;
-    type: 'article' | 'video' | 'documentation' | 'github';
-  }[];
+export interface ProjectFilters {
+  difficulty?: string;
+  stack?: string;
+  domain?: string;
+  search?: string;
 }
 
-// Tech Stack Schema Types
+export interface Technology {
+  name: string;
+  version?: string;
+  purpose?: string;
+}
+
 export interface TechStack {
   name: string;
-  category?: 'frontend' | 'backend' | 'database' | 'devops' | 'testing' | 'mobile' | 'ai';
-  technologies?: {
-    name: string;
-    version?: string;
-    purpose?: string;
-    alternatives?: string[];
-  }[];
-  architecture?: {
-    pattern?: string;
-    diagram?: string;
-    description?: string;
-  };
+  category?: string;
+  whenToChoose?: string;
   pros?: string[];
   cons?: string[];
-  whenToChoose?: string;
+  technologies?: Technology[];
+  architecture?: {
+    pattern?: string;
+    description?: string;
+  };
 }
 
-// Requirement Types
-export interface FunctionalRequirement {
+export interface Requirement {
   asA: string;
   iWant: string;
   soThat: string;
-  priority: 'Must Have' | 'Should Have' | 'Could Have';
+  priority: string;
 }
 
 export interface NonFunctionalRequirement {
   category: string;
   requirement: string;
-  metric: string;
+  metric?: string;
 }
 
-// Database Schema Types
 export interface EntityField {
   name: string;
   type: string;
-  required?: boolean;
   description?: string;
 }
 
 export interface EntityRelationship {
+  type: string;
   with: string;
-  type: 'one-to-one' | 'one-to-many' | 'many-to-many';
 }
 
 export interface DatabaseEntity {
   name: string;
-  fields: EntityField[];
+  fields?: EntityField[];
   relationships?: EntityRelationship[];
 }
 
-// API Endpoint Types
 export interface ApiEndpoint {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: string;
   path: string;
+  description?: string;
+}
+
+export interface ResourceLink {
+  title: string;
+  url: string;
+}
+
+export interface Milestone {
+  id?: string | number;
+  order?: number;
+  title: string;
   description: string;
-  requestBody?: Record<string, unknown>;
-  response?: Record<string, unknown>;
-  authRequired?: boolean;
+  estimatedHours?: number;
+  deliverables?: string[];
+  learningOutcomes?: string[];
+  resources?: ResourceLink[];
 }
 
-// Enrollment Types
 export interface Enrollment {
-  user: string;
-  enrolledAt: string;
-  currentMilestone: number;
-  completedMilestones: number[];
+  user: string | { _id?: string; name?: string };
+  status?: string;
+  completedMilestones: Array<string | number>;
   chosenStack?: TechStack;
-  repositoryUrl?: string;
-  deployedUrl?: string;
-  status: 'enrolled' | 'in-progress' | 'completed' | 'abandoned';
 }
 
-// Rating Types
-export interface Rating {
-  user: string;
-  rating: number;
-  review?: string;
-  completed?: boolean;
+export interface StarterCodeVariable {
+  name: string;
+  required?: boolean;
+  description?: string;
 }
 
-// Main Project Type
+export interface StarterCode {
+  setupInstructions?: string;
+  environmentVariables?: StarterCodeVariable[];
+}
+
+export interface ProjectMember {
+  user: {
+    _id?: string;
+    name?: string;
+  };
+}
+
 export interface Project {
   _id: string;
   title: string;
-  slug?: string;
   description: string;
-  shortDescription?: string;
-  status: 'active' | 'completed' | 'archived';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
-  domain?: 'Web' | 'Mobile' | 'AI' | 'DevOps' | 'Blockchain' | 'IoT' | 'Data Science' | 'Other';
-  tags?: string[];
-  isTemplate?: boolean;
-  isActive?: boolean;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced' | string;
+  domain?: string;
   estimatedDuration?: string;
   teamSize?: string;
-  
-  // Detailed Requirements
+  tags?: string[];
+  techStack?: string[];
+  members?: ProjectMember[];
+  suggestedStacks?: TechStack[];
   requirements?: {
-    functional?: FunctionalRequirement[];
+    functional?: Requirement[];
     nonFunctional?: NonFunctionalRequirement[];
   };
-  
-  // Technical Architecture
-  databaseSchema?: {
-    entities?: DatabaseEntity[];
-    erDiagram?: string;
-  };
-  apiEndpoints?: ApiEndpoint[];
-  
-  // UI/UX
-  wireframes?: {
-    title: string;
-    description: string;
-    imageUrl: string;
-  }[];
-  
-  // Implementation Guide
-  milestones?: Milestone[];
-  
-  // Stack Suggestions
-  suggestedStacks?: TechStack[];
-  
-  // Resources
-  starterCode?: {
-    repositoryUrl?: string;
-    setupInstructions?: string;
-    environmentVariables?: {
-      name: string;
-      description: string;
-      required?: boolean;
-    }[];
-  };
-  
-  // Legacy fields for backward compatibility
-  techStack?: string[];
   learningOutcomes?: string[];
   realWorldUse?: string;
-  
-  // User Progress Tracking
+  starterCode?: StarterCode;
+  databaseSchema?: {
+    entities?: DatabaseEntity[];
+  };
+  apiEndpoints?: ApiEndpoint[];
+  milestones?: Milestone[];
+  createdBy?: {
+    _id?: string;
+    name?: string;
+  };
   enrolledUsers?: Enrollment[];
-  
-  // Metadata
-  members?: Array<{ user: { _id: string; name: string; email: string }; role: string }>;
-  createdBy?: { _id: string; name: string; email: string };
-  mentors?: string[];
-  
-  // Ratings
-  ratings?: Rating[];
-  averageRating?: number;
-  completionCount?: number;
-  
-  // Enrollment data (populated for user's projects)
   enrollment?: Enrollment;
-  
-  // Legacy fields
-  visibility?: 'private' | 'team' | 'public';
-  progress?: number;
-  tasksCount?: { total: number; completed: number };
-  aiGenerated?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  completionCount?: number;
+  averageRating?: number;
+  ratings?: Array<{
+    user?: string;
+    rating: number;
+    review?: string;
+  }>;
+  isCreated?: boolean;
 }
 
-// Filter Types
-export interface ProjectFilters {
-  difficulty?: string;
-  stack?: string;
-  domain?: string;
-  status?: string;
+export interface AllMyProjectsResponse {
+  success: boolean;
+  count: number;
+  data: Project[];
 }
 
-// API Definition
 export const projectsApi = createApi({
   reducerPath: 'projectsApi',
   baseQuery: baseQueryWithReauth,
   tagTypes: ['Project', 'UserProject'],
   endpoints: (builder) => ({
-    // Get project suggestions (templates)
-    getProjectSuggestions: builder.query<Project[], ProjectFilters>({
-      query: (filters = {}) => ({
+    getProjectSuggestions: builder.query<Project[], ProjectFilters | void>({
+      query: (filters) => ({
         url: '/projects/suggestions',
-        params: filters as Record<string, unknown>,
+        params: (filters ?? {}) as Record<string, unknown>,
       }),
       transformResponse: (response: unknown) => {
-        if (Array.isArray(response)) return response;
+        if (Array.isArray(response)) return response as Project[];
         if (response && typeof response === 'object' && 'data' in response) {
           const data = (response as Record<string, unknown>).data;
-          if (Array.isArray(data)) return data;
+          if (Array.isArray(data)) return data as Project[];
         }
         return [];
       },
       providesTags: ['Project'],
     }),
 
-    // Get single project detail
     getProjectById: builder.query<Project, string>({
       query: (id) => `/projects/${id}`,
       transformResponse: (response: unknown) => {
@@ -224,35 +179,36 @@ export const projectsApi = createApi({
         }
         return response as Project;
       },
-      providesTags: (result, error, id) => [{ type: 'Project', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Project', id }],
     }),
 
-    // Get user's enrolled projects
     getMyProjects: builder.query<Project[], void>({
       query: () => '/projects/my-projects',
       transformResponse: (response: unknown) => {
+        if (Array.isArray(response)) return response as Project[];
         if (response && typeof response === 'object' && 'data' in response) {
-          return (response as Record<string, unknown>).data as Project[];
+          return ((response as Record<string, unknown>).data as Project[]) ?? [];
         }
         return [];
       },
       providesTags: ['UserProject'],
     }),
 
-    // Get ALL user projects (created + enrolled)
-    getAllMyProjects: builder.query<{ success: boolean; count: number; data: Project[] }, void>({
-      query: () => '/all-my-projects',
+    getAllMyProjects: builder.query<AllMyProjectsResponse, void>({
+      query: () => '/projects/all-my-projects',
       transformResponse: (response: unknown) => {
         if (response && typeof response === 'object' && 'data' in response) {
-          return response as { success: boolean; count: number; data: Project[] };
+          return response as AllMyProjectsResponse;
         }
         return { success: false, count: 0, data: [] };
       },
       providesTags: ['UserProject'],
     }),
 
-    // Enroll in a project
-    enrollInProject: builder.mutation<{ success: boolean; message: string; enrollment: Enrollment }, { projectId: string; chosenStack: TechStack }>({
+    enrollInProject: builder.mutation<
+      { success: boolean; message: string; enrollment: Enrollment },
+      { projectId: string; chosenStack: Partial<TechStack> & { name: string } }
+    >({
       query: ({ projectId, chosenStack }) => ({
         url: `/projects/${projectId}/enroll`,
         method: 'POST',
@@ -261,8 +217,10 @@ export const projectsApi = createApi({
       invalidatesTags: ['UserProject'],
     }),
 
-    // Update milestone
-    updateMilestone: builder.mutation<{ success: boolean; enrollment: Enrollment }, { projectId: string; milestoneId: number; status: string }>({
+    updateMilestone: builder.mutation<
+      { success: boolean; enrollment: Enrollment },
+      { projectId: string; milestoneId: number; status: string }
+    >({
       query: ({ projectId, milestoneId, status }) => ({
         url: `/projects/${projectId}/milestones/${milestoneId}`,
         method: 'PUT',
@@ -271,8 +229,10 @@ export const projectsApi = createApi({
       invalidatesTags: ['UserProject'],
     }),
 
-    // Rate project
-    rateProject: builder.mutation<{ success: boolean; averageRating: number; totalRatings: number }, { projectId: string; rating: number; review?: string; completed?: boolean }>({
+    rateProject: builder.mutation<
+      { success: boolean; averageRating: number; totalRatings: number },
+      { projectId: string; rating: number; review?: string; completed?: boolean }
+    >({
       query: ({ projectId, rating, review, completed }) => ({
         url: `/projects/${projectId}/rate`,
         method: 'POST',
@@ -281,7 +241,6 @@ export const projectsApi = createApi({
       invalidatesTags: ['Project'],
     }),
 
-    // CRUD for user projects
     getProjects: builder.query<Project[], void>({
       query: () => '/',
       providesTags: ['Project'],
@@ -298,16 +257,16 @@ export const projectsApi = createApi({
 
     updateProject: builder.mutation<Project, { id: string; updates: Partial<Project> }>({
       query: ({ id, updates }) => ({
-        url: `/${id}`,
+        url: `/projects/${id}`,
         method: 'PUT',
         body: updates,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Project', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Project', id }],
     }),
 
     deleteProject: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/${id}`,
+        url: `/projects/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Project', 'UserProject'],
@@ -315,7 +274,6 @@ export const projectsApi = createApi({
   }),
 });
 
-// Single export statement
 export const {
   useGetProjectSuggestionsQuery,
   useGetProjectByIdQuery,
@@ -329,4 +287,3 @@ export const {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
 } = projectsApi;
-
