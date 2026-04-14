@@ -26,6 +26,7 @@ app.use(express.json());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? [
+        'https://task-management-system-beige-beta-38.vercel.app',
         'https://task-management-frontend.vercel.app',
         'https://task-management-frontend-git-main-kelvin-maina.vercel.app'
       ]
