@@ -27,8 +27,9 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? [
         'https://task-management-system-beige-beta-38.vercel.app',
-        'https://task-management-frontend.vercel.app',
-        'https://task-management-frontend-git-main-kelvin-maina.vercel.app'
+        'https://task-management-system-git-main-kelvin-mainas-projects-2196d2d7.vercel.app',
+        'https://task-management-system-c9m5ikrw9.vercel.app',
+        /\.vercel\.app$/ // covers any future preview URLs
       ]
     : true,  // allow all origins locally
   credentials: true,
