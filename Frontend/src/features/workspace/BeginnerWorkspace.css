@@ -1,0 +1,264 @@
+.beginner-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.workspace-header {
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  padding: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid #30363d;
+  color: #58a6ff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  align-self: center;
+}
+
+.back-btn:hover {
+  background: #1f242c;
+  border-color: #58a6ff;
+}
+
+.header-content h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 5px 0 0 0;
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.progress-bar {
+  flex: 1;
+  max-width: 300px;
+  height: 8px;
+  background: #21262d;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #238636, #58a6ff);
+  transition: width 0.3s ease;
+}
+
+.progress-info p {
+  margin: 0;
+  color: #8b949e;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.workspace-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+.lessons-sidebar {
+  width: 280px;
+  background: #0d1117;
+  border-right: 1px solid #30363d;
+  overflow-y: auto;
+  padding: 15px;
+  flex-shrink: 0;
+}
+
+.lessons-sidebar.hidden-sidebar {
+  display: none;
+}
+
+.lessons-sidebar h2 {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #8b949e;
+  letter-spacing: 0.5px;
+}
+
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lesson-card:hover {
+  background: #21262d;
+  border-color: #58a6ff;
+}
+
+.lesson-card.completed {
+  border-color: #238636;
+  opacity: 0.7;
+}
+
+.lesson-checkbox {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border: 2px solid #30363d;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.lesson-card.completed .lesson-checkbox {
+  background: #238636;
+  border-color: #238636;
+}
+
+.check-icon {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.lesson-info {
+  flex: 1;
+}
+
+.lesson-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.lesson-info p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+.difficulty-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #238636;
+  color: white;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.devspace-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.workspace-content.fullscreen {
+  flex-direction: column;
+}
+
+.lessons-sidebar.hidden-sidebar ~ .devspace-wrapper {
+  width: 100%;
+}
+
+/* Fullscreen Mode */
+.beginner-workspace.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 9999;
+}
+
+.beginner-workspace.fullscreen-mode .workspace-header {
+  display: none;
+}
+
+.beginner-workspace.fullscreen-mode .workspace-content {
+  height: 100vh;
+}
+
+/* Scrollbars */
+.lessons-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lessons-sidebar::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+.lessons-sidebar::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+.lessons-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #48545a;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .workspace-content {
+    flex-direction: column;
+  }
+
+  .lessons-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #30363d;
+    max-height: 200px;
+  }
+
+  .header-content {
+    flex-direction: column;
+  }
+
+  .back-btn {
+    width: 100%;
+  }
+
+  .header-content h1 {
+    font-size: 22px;
+  }
+}

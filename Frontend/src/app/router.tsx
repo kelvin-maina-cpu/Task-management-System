@@ -7,15 +7,17 @@ import { LoginPage } from '../features/auth/pages/LoginPage';
 import { SignupPage } from '../features/auth/pages/SignupPage';
 import { ProjectSuggestions } from '../features/projects/ProjectSuggestions';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
+import { ProjectDevSpace } from '../features/projects/ProjectDevSpace';
 import { TechnologyRecommendation } from '../features/projects/TechnologyRecommendation';
 import { KanbanBoard } from '../features/collaboration/KanbanBoard';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AdminLayout } from '../features/admin/AdminLayout';
 import { ProjectApproval } from '../features/admin/ProjectApproval';
 import { MainLayout } from '../components/layout/MainLayout';
-import { ProjectWorkspace } from '../features/guidance/ProjectWorkspace';
 import { EditProjectPage } from '../features/projects/EditProjectPage';
 import MyProjectsPage from '../features/projects/MyProjectsPage';
+import { BeginnerWorkspace } from '../features/workspace/BeginnerWorkspace';
+import { SeniorWorkspace } from '../features/workspace/SeniorWorkspace';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -67,6 +69,22 @@ export const router = createBrowserRouter([
     element: <BeginnerGuidePage />,
   },
   {
+    path: '/beginner-workspace',
+    element: (
+      <ProtectedRoute>
+        <BeginnerWorkspace />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/senior-workspace',
+    element: (
+      <ProtectedRoute>
+        <SeniorWorkspace />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/login',
     element: (
       <PublicRoute>
@@ -95,6 +113,14 @@ export const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
+        path: 'workspace/beginner',
+        element: <BeginnerWorkspace />,
+      },
+      {
+        path: 'workspace/senior',
+        element: <SeniorWorkspace />,
+      },
+      {
         path: 'projects/suggestions',
         element: <ProjectSuggestions />,
       },
@@ -112,7 +138,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'projects/:projectId/workspace',
-        element: <ProjectWorkspace />,
+        element: <ProjectDevSpace />,
       },
       {
         path: 'projects',

@@ -17,6 +17,18 @@ const navItems = [
     shortLabel: 'Projects',
     accent: 'from-orange-400 to-rose-500',
   },
+  {
+    path: '/workspace/beginner',
+    label: 'Beginner Workspace',
+    shortLabel: 'Beginner',
+    accent: 'from-emerald-400 to-green-500',
+  },
+  {
+    path: '/workspace/senior',
+    label: 'Advanced Workspace',
+    shortLabel: 'Advanced',
+    accent: 'from-purple-400 to-indigo-500',
+  },
 ];
 
 export const MainLayout = () => {
@@ -34,7 +46,7 @@ export const MainLayout = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[linear-gradient(180deg,_#0f172a_0%,_#111827_55%,_#0b1120_100%)] text-white">
+    <div className="flex min-h-screen bg-[linear-gradient(180deg,_#0f172a_0%,_#111827_55%,_#0b1120_100%)] text-white overflow-hidden">
       <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-white/10 bg-slate-950/80 px-5 py-6 backdrop-blur-xl">
         <Link to="/" className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.06]">
           <div className="flex items-center gap-3">
@@ -75,7 +87,15 @@ export const MainLayout = () => {
                   <div>
                     <p className="text-sm font-semibold text-white">{item.label}</p>
                     <p className="text-xs text-slate-400">
-                      {item.path === '/dashboard' ? 'Track growth and progress' : 'Explore stacks and project ideas'}
+                      {item.path === '/dashboard' 
+                        ? 'Track growth and progress' 
+                        : item.path === '/projects/suggestions' 
+                        ? 'Explore stacks and project ideas'
+                        : item.path === '/workspace/beginner'
+                        ? 'Master HTML, CSS, and JavaScript fundamentals'
+                        : item.path === '/workspace/senior'
+                        ? 'Advanced patterns and full-stack development'
+                        : ''}
                     </p>
                   </div>
                 </div>

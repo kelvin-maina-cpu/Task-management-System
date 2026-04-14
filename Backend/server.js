@@ -11,6 +11,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const guidanceRoutes = require('./routes/guidanceRoutes');
+const fileRoutes = require('./routes/fileRoutes');
 
 // Connect DB
 connectDB().catch(err => {
@@ -51,6 +52,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guidance', guidanceRoutes);
+app.use('/api/files', fileRoutes);
 
 // Health check
 app.get('/', (req, res) => {

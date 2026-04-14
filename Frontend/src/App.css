@@ -1,6 +1,9 @@
 #root {
   width: 100%;
   min-height: 100vh;
+  border: none !important;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 .logo {
