@@ -43,7 +43,7 @@ const projectFileSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true, suppressReservedKeysWarning: true }
 );
 
 // Compound index for efficient queries
