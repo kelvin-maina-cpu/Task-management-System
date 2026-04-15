@@ -508,6 +508,8 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   const [currentPanel, setCurrentPanel] = useState<PanelName>('terminal');
   const [editorContent, setEditorContent] = useState('');
   const [htmlPreview, setHtmlPreview] = useState<string>('');
+  const [panelHeight, setPanelHeight] = useState(200); // Track bottom panel height
+  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -1230,6 +1232,42 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [saveFile]);
 
+  // Panel resize handlers
+  const handlePanelDragStart = () => {
+    setIsDraggingPanel(true);
+  };
+
+  useEffect(() => {
+    const handlePanelDragMove = (e: MouseEvent) => {
+      if (!isDraggingPanel) return;
+
+      const editorContainer = document.querySelector('.editor-container');
+      if (!editorContainer) return;
+
+      const rect = editorContainer.getBoundingClientRect();
+      const newHeight = Math.max(100, Math.min(rect.height - 100, rect.height - (e.clientY - rect.top)));
+      setPanelHeight(newHeight);
+    };
+
+    const handlePanelDragEnd = () => {
+      setIsDraggingPanel(false);
+    };
+
+    if (isDraggingPanel) {
+      document.addEventListener('mousemove', handlePanelDragMove);
+      document.addEventListener('mouseup', handlePanelDragEnd);
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handlePanelDragMove);
+      document.removeEventListener('mouseup', handlePanelDragEnd);
+      document.body.style.cursor = 'auto';
+      document.body.style.userSelect = 'auto';
+    };
+  }, [isDraggingPanel]);
+
   const renderFileTree = (item: FileItem, path = ''): React.ReactNode => {
     const fullPath = path ? `${path}/${item.name}` : item.name;
     const isFolder = item.type === 'folder';
@@ -1593,7 +1631,15 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
             </div>
           </div>
 
-          <div className={`bottom-panel ${currentPanel === 'terminal' && isTerminalExpanded ? 'terminal-expanded' : ''}`}>
+          <div 
+            className={`bottom-panel ${currentPanel === 'terminal' && isTerminalExpanded ? 'terminal-expanded' : ''}`}
+            style={{ height: `${panelHeight}px` }}
+          >
+            <div 
+              className="panel-resize-handle"
+              onMouseDown={handlePanelDragStart}
+              title="Drag to resize panel"
+            />
             <div className="panel-tabs">
               <div className={`panel-tab ${currentPanel === 'problems' ? 'active' : ''}`} onClick={() => setCurrentPanel('problems')}>
                 Problems <span className="panel-count">{problems.length}</span>

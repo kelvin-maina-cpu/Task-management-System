@@ -540,17 +540,34 @@
 
 /* Bottom Panel */
 .bottom-panel {
-  height: var(--panel-height);
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3);
+  resize: vertical;
 }
 
 .bottom-panel.terminal-expanded {
-  height: min(65vh, 720px);
+  height: min(65vh, 720px) !important;
+}
+
+/* Panel Resize Handle */
+.panel-resize-handle {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to bottom, var(--border-color), transparent);
+  cursor: ns-resize;
+  transition: background 0.2s;
+  margin-bottom: -2px;
+  flex-shrink: 0;
+}
+
+.panel-resize-handle:hover {
+  background: linear-gradient(to bottom, var(--accent-blue), transparent);
+  height: 6px;
+  margin-bottom: -3px;
 }
 
 .panel-tabs {
