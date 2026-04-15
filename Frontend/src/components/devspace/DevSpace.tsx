@@ -1254,7 +1254,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
       </div>
 
       <div className={`devspace-main ${isFullscreen ? 'fullscreen-mode' : ''}`}>
-        {!isFullscreen && sidebarVisible && (
+        {sidebarVisible && (
           <div className="devspace-sidebar">
             <div className="sidebar-header">
               <span>Explorer</span>
@@ -1353,7 +1353,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
 
           <div className="status-bar">
             <div className="status-item">{problems.length > 0 ? `${problems.length} issue(s)` : 'No Issues'}</div>
-            <div className="status-item">{activeTab ? getPathLabel(rootName, activeTab) : '/'}</div>
+            <div className="status-item">{activeTab ? activeTab.split('/').pop() || activeTab : '/'}</div>
             <div className="status-item" style={{ marginLeft: 'auto' }}>Ln {cursor.line}, Col {cursor.column}</div>
             <div className="status-item">UTF-8</div>
             <div className="status-item">{activeTab ? detectLanguage(activeTab) : 'Plain Text'}</div>
