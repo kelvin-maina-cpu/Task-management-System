@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Editor from '@monaco-editor/react';
 import './DevSpace.css';
+import { fileService } from '../../services/fileService';
 
 export interface FileItem {
   name: string;
@@ -127,6 +129,33 @@ const detectLanguage = (path: string) => {
   return map[ext] || 'Plain Text';
 };
 
+const getMonacoLanguage = (path: string) => {
+  const ext = path.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    js: 'javascript',
+    jsx: 'javascript',
+    ts: 'typescript',
+    tsx: 'typescript',
+    html: 'html',
+    css: 'css',
+    scss: 'scss',
+    json: 'json',
+    md: 'markdown',
+    py: 'python',
+    java: 'java',
+    cpp: 'cpp',
+    c: 'c',
+    php: 'php',
+    yml: 'yaml',
+    yaml: 'yaml',
+    xml: 'xml',
+    sh: 'shell',
+    sql: 'sql',
+  };
+
+  return map[ext] || 'plaintext';
+};
+
 const normalizeSegments = (segments: string[]) => {
   const normalized: string[] = [];
 
@@ -160,6 +189,14 @@ const getPathLabel = (rootName: string, path: string) => {
   }
 
   return `/${splitPath(path).slice(1).join('/')}`;
+};
+
+const getWorkspaceRelativePath = (rootName: string, path: string) => {
+  if (!path || path === rootName) {
+    return '.';
+  }
+
+  return splitPath(path).slice(1).join('/') || '.';
 };
 
 const resolvePath = (input: string, currentDir: string, rootName: string) => {
@@ -232,15 +269,6 @@ const addItemToFolder = (tree: FileItem, folderPath: string, newItem: FileItem, 
       addItemToFolder(child, folderPath, newItem, `${currentPath}/${child.name}`)
     ),
   };
-};
-
-const listChildren = (tree: FileItem, folderPath: string) => {
-  const folder = findItem(tree, folderPath);
-  if (!folder || folder.type !== 'folder') {
-    return [];
-  }
-
-  return folder.children ?? [];
 };
 
 const countLines = (value: string) => value.split('\n').length;
@@ -452,15 +480,16 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const [isTerminalExpanded, setIsTerminalExpanded] = useState(false);
   const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([
-    { id: 'terminal-welcome-1', kind: 'info', text: 'DevSpace shell ready. Type "help" to list commands.' },
-    { id: 'terminal-welcome-2', kind: 'info', text: 'This terminal operates on the in-browser project workspace.' },
+    { id: 'terminal-welcome-1', kind: 'info', text: 'DevSpace PowerShell ready. Type "help" to list commands.' },
+    { id: 'terminal-welcome-2', kind: 'info', text: 'Commands run in the backend project workspace using PowerShell.' },
   ]);
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalCwd, setTerminalCwd] = useState(fileTree.name);
   const [newItemSeed, setNewItemSeed] = useState(1);
 
-  const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = useRef<any>(null);
   const terminalScrollRef = useRef<HTMLDivElement | null>(null);
   const localRootHandleRef = useRef<any>(null);
   const localFileHandlesRef = useRef<Map<string, any>>(new Map());
@@ -666,10 +695,8 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     await Promise.all(nextTabs.map((tab) => persistFileToLocalWorkspace(tab.path, tab.content)));
   }, [activeTab, appendOutput, appendTerminal, editorContent, fileTree, openTabs, persistFileToLocalWorkspace, syncProblems]);
 
-  const handleEditorChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const content = event.currentTarget.value;
+  const handleEditorChange = (content: string) => {
     setEditorContent(content);
-    setCursor(getCursorMetrics(content, event.currentTarget.selectionStart));
 
     setOpenTabs((prev) =>
       prev.map((tab) =>
@@ -680,48 +707,6 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     if (activeTab) {
       syncProblems(activeTab, content);
       onCodeChange?.(activeTab, content);
-    }
-  };
-
-  const updateCursorFromSelection = () => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
-
-    setCursor(getCursorMetrics(editor.value, editor.selectionStart));
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-      event.preventDefault();
-      saveFile();
-      return;
-    }
-
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      const target = event.currentTarget;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const nextValue = `${editorContent.slice(0, start)}  ${editorContent.slice(end)}`;
-      setEditorContent(nextValue);
-      setOpenTabs((prev) =>
-        prev.map((tab) =>
-          tab.path === activeTab ? { ...tab, modified: true, content: nextValue } : tab
-        )
-      );
-
-      requestAnimationFrame(() => {
-        target.selectionStart = start + 2;
-        target.selectionEnd = start + 2;
-        updateCursorFromSelection();
-      });
-
-      if (activeTab) {
-        syncProblems(activeTab, nextValue);
-        onCodeChange?.(activeTab, nextValue);
-      }
     }
   };
 
@@ -888,9 +873,20 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     closeMenu();
   };
 
+  const handleEditorMount = useCallback((editor: any) => {
+    editorRef.current = editor;
+
+    editor.onDidChangeCursorPosition((event: any) => {
+      setCursor({
+        line: event.position.lineNumber,
+        column: event.position.column,
+      });
+    });
+  }, []);
+
   const executeTerminalCommand = useCallback((rawInput: string) => {
     const trimmed = rawInput.trim();
-    appendTerminal('command', `${getPathLabel(rootName, terminalCwd)} $ ${trimmed}`);
+    appendTerminal('command', `PS ${getPathLabel(rootName, terminalCwd)}> ${trimmed}`);
 
     if (!trimmed) {
       return;
@@ -900,34 +896,13 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     const argument = rest.join(' ');
 
     if (command === 'help') {
-      appendTerminal('output', 'help, clear, pwd, ls, tree, cd <path>, cat <path>, open <path>, save, run, tabs, problems, output, console');
+      appendTerminal('output', 'Built-ins: help, clear, cd <path>, tree, cat <path>, open <path>, save, run, tabs, problems, output, console');
+      appendTerminal('output', 'PowerShell-backed commands: git status, git push, npm run build, Get-ChildItem, Get-Location, php artisan, node ...');
       return;
     }
 
     if (command === 'clear') {
       setTerminalEntries([]);
-      return;
-    }
-
-    if (command === 'pwd') {
-      appendTerminal('output', getPathLabel(rootName, terminalCwd));
-      return;
-    }
-
-    if (command === 'ls') {
-      const targetPath = resolvePath(argument || '.', terminalCwd, rootName);
-      const children = listChildren(fileTree, targetPath);
-      if (children.length === 0) {
-        appendTerminal('output', '(empty)');
-        return;
-      }
-
-      appendTerminal(
-        'output',
-        children
-          .map((child) => `${child.type === 'folder' ? '[dir]' : '[file]'} ${child.name}`)
-          .join('  ')
-      );
       return;
     }
 
@@ -1039,7 +1014,41 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
       return;
     }
 
-    appendTerminal('error', `Unknown command: ${command}`);
+    const workspaceCwd = getWorkspaceRelativePath(rootName, terminalCwd);
+
+    fileService.executeWorkspaceCommand(trimmed, workspaceCwd)
+      .then((result) => {
+        if (result.stdout.trim()) {
+          result.stdout.split(/\r?\n/).forEach((line) => {
+            if (line.trim().length > 0) {
+              appendTerminal('output', line);
+            }
+          });
+        }
+
+        if (result.stderr.trim()) {
+          result.stderr.split(/\r?\n/).forEach((line) => {
+            if (line.trim().length > 0) {
+              appendTerminal('error', line);
+            }
+          });
+        }
+
+        if (!result.stdout.trim() && !result.stderr.trim()) {
+          appendTerminal(result.exitCode === 0 ? 'success' : 'error', `exit ${result.exitCode}`);
+        } else if (result.exitCode === 0) {
+          appendTerminal('success', `exit ${result.exitCode}`);
+        } else {
+          appendTerminal('error', `exit ${result.exitCode}`);
+        }
+      })
+      .catch((error) => {
+        const message =
+          error?.response?.data?.error ||
+          error?.message ||
+          'Command failed';
+        appendTerminal('error', message);
+      });
   }, [activeTab, consoleLogs, fileTree, handleRunCode, openFile, openTabs, outputLogs, problems, rootName, saveFile, terminalCwd, appendTerminal]);
 
   const handleTerminalSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -1051,6 +1060,12 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        saveFile();
+        return;
+      }
+
       if ((event.ctrlKey || event.metaKey) && event.key === '`') {
         event.preventDefault();
         setCurrentPanel('terminal');
@@ -1064,7 +1079,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, []);
+  }, [saveFile]);
 
   const renderFileTree = (item: FileItem, path = ''): React.ReactNode => {
     const fullPath = path ? `${path}/${item.name}` : item.name;
@@ -1156,7 +1171,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
         ))}
       </div>
       <form className="terminal-form" onSubmit={handleTerminalSubmit}>
-        <span className="terminal-prompt">{getPathLabel(rootName, terminalCwd)} $</span>
+        <span className="terminal-prompt">PS {getPathLabel(rootName, terminalCwd)}&gt;</span>
         <input
           className="terminal-input"
           value={terminalInput}
@@ -1309,25 +1324,35 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
                   </div>
                 </div>
               ) : (
-                <textarea
-                  ref={editorRef}
+                <div className="code-editor-container">
+                  <Editor
                   className="code-editor"
+                  height="100%"
+                  language={activeTab ? getMonacoLanguage(activeTab) : 'plaintext'}
                   value={editorContent}
-                  onChange={handleEditorChange}
-                  onKeyDown={handleKeyDown}
-                  onClick={updateCursorFromSelection}
-                  onKeyUp={updateCursorFromSelection}
-                  onSelect={updateCursorFromSelection}
-                  readOnly={readOnly}
-                  spellCheck={false}
-                  style={{ whiteSpace: wordWrap ? 'pre-wrap' : 'pre' }}
+                  onChange={(value) => handleEditorChange(value ?? '')}
+                  onMount={handleEditorMount}
+                  theme="vs-dark"
+                  options={{
+                    readOnly,
+                    minimap: { enabled: true },
+                    fontSize: 14,
+                    fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
+                    wordWrap: wordWrap ? 'on' : 'off',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    renderWhitespace: 'selection',
+                    smoothScrolling: true,
+                  }}
                 />
+                </div>
               )}
             </div>
-            {openTabs.length > 0 && <div className="minimap" />}
           </div>
 
-          <div className="bottom-panel">
+          <div className={`bottom-panel ${currentPanel === 'terminal' && isTerminalExpanded ? 'terminal-expanded' : ''}`}>
             <div className="panel-tabs">
               <div className={`panel-tab ${currentPanel === 'problems' ? 'active' : ''}`} onClick={() => setCurrentPanel('problems')}>
                 Problems <span className="panel-count">{problems.length}</span>
@@ -1341,6 +1366,15 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
               <div className={`panel-tab ${currentPanel === 'terminal' ? 'active' : ''}`} onClick={() => setCurrentPanel('terminal')}>
                 Terminal
               </div>
+              {currentPanel === 'terminal' && (
+                <button
+                  type="button"
+                  className="panel-action-btn"
+                  onClick={() => setIsTerminalExpanded((prev) => !prev)}
+                >
+                  {isTerminalExpanded ? 'Collapse' : 'Expand'}
+                </button>
+              )}
             </div>
 
             <div className="panel-content">

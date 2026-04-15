@@ -26,6 +26,9 @@ router.post('/projects/:projectId/files/batch', fileController.batchSaveFiles);
 // Delete file
 router.delete('/projects/:projectId/files/:filePath', fileController.deleteFile);
 
+// Workspace terminal
+router.post('/workspace/terminal/execute', fileController.executeTerminalCommand);
+
 // ===== GIT OPERATIONS =====
 // Get git status
 router.get('/projects/:projectId/git/status', gitController.getGitStatus);

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 
 const API_BASE = '/api/files';
 
@@ -22,7 +22,7 @@ class FileService {
    * Get all files for a project
    */
   async getProjectFiles(projectId: string): Promise<any[]> {
-    const response = await axios.get<{ files: any[] }>(
+    const response = await api.get<{ files: any[] }>(
       `${API_BASE}/projects/${projectId}/files`
     );
     return response.data.files;
@@ -32,7 +32,7 @@ class FileService {
    * Get file structure (tree) for a project
    */
   async getFileStructure(projectId: string): Promise<any> {
-    const response = await axios.get<{ structure: any }>(
+    const response = await api.get<{ structure: any }>(
       `${API_BASE}/projects/${projectId}/file-structure`
     );
     return response.data.structure;
@@ -42,7 +42,7 @@ class FileService {
    * Get a specific file
    */
   async getFile(projectId: string, filePath: string): Promise<any> {
-    const response = await axios.get<{ file: any }>(
+    const response = await api.get<{ file: any }>(
       `${API_BASE}/projects/${projectId}/files/${encodeURIComponent(filePath)}`
     );
     return response.data.file;
@@ -52,7 +52,7 @@ class FileService {
    * Save or update a file
    */
   async saveFile(projectId: string, fileData: FileData): Promise<any> {
-    const response = await axios.post<FileResponse>(
+    const response = await api.post<FileResponse>(
       `${API_BASE}/projects/${projectId}/files`,
       fileData
     );
@@ -63,7 +63,7 @@ class FileService {
    * Batch save multiple files
    */
   async batchSaveFiles(projectId: string, files: FileData[]): Promise<any[]> {
-    const response = await axios.post<{ files: any[] }>(
+    const response = await api.post<{ files: any[] }>(
       `${API_BASE}/projects/${projectId}/files/batch`,
       { files }
     );
@@ -74,7 +74,7 @@ class FileService {
    * Delete a file
    */
   async deleteFile(projectId: string, filePath: string): Promise<void> {
-    await axios.delete(
+    await api.delete(
       `${API_BASE}/projects/${projectId}/files/${encodeURIComponent(filePath)}`
     );
   }
@@ -83,7 +83,7 @@ class FileService {
    * Commit changes (git)
    */
   async commitChanges(projectId: string, message: string, files?: string[]): Promise<any> {
-    const response = await axios.post(
+    const response = await api.post(
       `${API_BASE}/projects/${projectId}/git/commit`,
       { message, files }
     );
@@ -94,7 +94,7 @@ class FileService {
    * Push changes to remote
    */
   async pushChanges(projectId: string, branch?: string): Promise<any> {
-    const response = await axios.post(
+    const response = await api.post(
       `${API_BASE}/projects/${projectId}/git/push`,
       { branch }
     );
@@ -105,7 +105,7 @@ class FileService {
    * Pull changes from remote
    */
   async pullChanges(projectId: string, branch?: string): Promise<any> {
-    const response = await axios.post(
+    const response = await api.post(
       `${API_BASE}/projects/${projectId}/git/pull`,
       { branch }
     );
@@ -116,9 +116,26 @@ class FileService {
    * Get git status
    */
   async getGitStatus(projectId: string): Promise<any> {
-    const response = await axios.get(
+    const response = await api.get(
       `${API_BASE}/projects/${projectId}/git/status`
     );
+    return response.data;
+  }
+
+  async executeWorkspaceCommand(commandLine: string, cwd = '.'): Promise<{
+    command: string;
+    cwd: string;
+    shell: string;
+    exitCode: number;
+    signal: string | null;
+    stdout: string;
+    stderr: string;
+  }> {
+    const response = await api.post(`${API_BASE}/workspace/terminal/execute`, {
+      commandLine,
+      cwd,
+    });
+
     return response.data;
   }
 }

@@ -536,6 +536,10 @@
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
+.bottom-panel.terminal-expanded {
+  height: min(65vh, 720px);
+}
+
 .panel-tabs {
   height: 35px;
   display: flex;
@@ -544,6 +548,23 @@
   align-items: center;
   padding: 0 10px;
   gap: 5px;
+}
+
+.panel-action-btn {
+  margin-left: auto;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.panel-action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-blue);
 }
 
 .panel-tab {
@@ -726,6 +747,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-right: 4px;
 }
 
 .terminal-line {

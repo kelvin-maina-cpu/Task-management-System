@@ -1,5 +1,37 @@
 const ProjectFile = require('../models/ProjectFile');
 const Project = require('../models/Project');
+const path = require('path');
+const { spawn } = require('child_process');
+
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+
+function resolveWorkspaceDir(relativeCwd = '.') {
+  const targetPath = path.resolve(WORKSPACE_ROOT, relativeCwd);
+  const normalizedRoot = `${WORKSPACE_ROOT}${path.sep}`;
+  const normalizedTarget = `${targetPath}${path.sep}`;
+
+  if (targetPath !== WORKSPACE_ROOT && !normalizedTarget.startsWith(normalizedRoot)) {
+    throw new Error('Requested terminal path is outside the allowed workspace');
+  }
+
+  return targetPath;
+}
+
+function createShellSpec(commandLine) {
+  if (process.platform === 'win32') {
+    return {
+      shell: 'powershell',
+      file: 'powershell.exe',
+      args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', commandLine],
+    };
+  }
+
+  return {
+    shell: 'sh',
+    file: '/bin/sh',
+    args: ['-lc', commandLine],
+  };
+}
 
 // Get all files for a project
 exports.getProjectFiles = async (req, res) => {
@@ -184,5 +216,79 @@ exports.batchSaveFiles = async (req, res) => {
     res.json({ files: savedFiles, message: 'Files saved successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Execute a workspace terminal command
+exports.executeTerminalCommand = async (req, res) => {
+  try {
+    const { commandLine, cwd = '.' } = req.body;
+
+    if (!commandLine || typeof commandLine !== 'string') {
+      return res.status(400).json({ error: 'commandLine is required' });
+    }
+    const workspaceDir = resolveWorkspaceDir(cwd);
+    const trimmedCommand = commandLine.trim();
+    if (!trimmedCommand) {
+      return res.status(400).json({ error: 'No command provided' });
+    }
+    const commandSpec = createShellSpec(trimmedCommand);
+
+    const child = spawn(commandSpec.file, commandSpec.args, {
+      cwd: workspaceDir,
+      shell: false,
+      windowsHide: true,
+      env: process.env,
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let finished = false;
+    const outputLimit = 1024 * 64;
+
+    const timeout = setTimeout(() => {
+      if (!finished) {
+        child.kill();
+      }
+    }, 30000);
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+      if (stdout.length > outputLimit) {
+        stdout = `${stdout.slice(0, outputLimit)}\n...[truncated]`;
+      }
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+      if (stderr.length > outputLimit) {
+        stderr = `${stderr.slice(0, outputLimit)}\n...[truncated]`;
+      }
+    });
+
+    child.on('error', (error) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      res.status(500).json({ error: error.message });
+    });
+
+    child.on('close', (code, signal) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+
+      res.json({
+        command: commandLine,
+        cwd: path.relative(WORKSPACE_ROOT, workspaceDir) || '.',
+        shell: commandSpec.shell,
+        exitCode: code ?? 1,
+        signal: signal || null,
+        stdout,
+        stderr,
+      });
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };
