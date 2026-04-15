@@ -44,6 +44,12 @@ interface LocalWorkspaceLoadResult {
   fileHandles: Map<string, any>;
 }
 
+interface CreateFileDialogState {
+  isOpen: boolean;
+  name: string;
+  languageKey: string;
+}
+
 export interface DevSpaceProps {
   initialFileTree?: FileItem;
   readOnly?: boolean;
@@ -52,6 +58,28 @@ export interface DevSpaceProps {
 }
 
 type PanelName = 'console' | 'problems' | 'output' | 'terminal';
+
+const FILE_LANGUAGE_OPTIONS = [
+  { key: 'plaintext', label: 'Plain Text', extension: 'txt' },
+  { key: 'javascript', label: 'JavaScript', extension: 'js' },
+  { key: 'typescript', label: 'TypeScript', extension: 'ts' },
+  { key: 'jsx', label: 'React JSX', extension: 'jsx' },
+  { key: 'tsx', label: 'React TSX', extension: 'tsx' },
+  { key: 'html', label: 'HTML', extension: 'html' },
+  { key: 'css', label: 'CSS', extension: 'css' },
+  { key: 'scss', label: 'SCSS', extension: 'scss' },
+  { key: 'json', label: 'JSON', extension: 'json' },
+  { key: 'markdown', label: 'Markdown', extension: 'md' },
+  { key: 'python', label: 'Python', extension: 'py' },
+  { key: 'java', label: 'Java', extension: 'java' },
+  { key: 'cpp', label: 'C++', extension: 'cpp' },
+  { key: 'c', label: 'C', extension: 'c' },
+  { key: 'php', label: 'PHP', extension: 'php' },
+  { key: 'yaml', label: 'YAML', extension: 'yml' },
+  { key: 'xml', label: 'XML', extension: 'xml' },
+  { key: 'shell', label: 'Shell', extension: 'sh' },
+  { key: 'sql', label: 'SQL', extension: 'sql' },
+] as const;
 
 const createDefaultTree = (): FileItem => ({
   name: 'project',
@@ -481,6 +509,11 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   const [wordWrap, setWordWrap] = useState(true);
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [isTerminalExpanded, setIsTerminalExpanded] = useState(false);
+  const [createFileDialog, setCreateFileDialog] = useState<CreateFileDialogState>({
+    isOpen: false,
+    name: '',
+    languageKey: 'javascript',
+  });
   const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([
     { id: 'terminal-welcome-1', kind: 'info', text: 'DevSpace PowerShell ready. Type "help" to list commands.' },
     { id: 'terminal-welcome-2', kind: 'info', text: 'Commands run in the backend project workspace using PowerShell.' },
@@ -723,6 +756,19 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
 
   const closeMenu = () => setOpenMenu(null);
 
+  const openCreateFileDialog = () => {
+    setCreateFileDialog({
+      isOpen: true,
+      name: `untitled-${newItemSeed}`,
+      languageKey: 'javascript',
+    });
+    closeMenu();
+  };
+
+  const closeCreateFileDialog = () => {
+    setCreateFileDialog((prev) => ({ ...prev, isOpen: false }));
+  };
+
   const openFolderFromPC = useCallback(async () => {
     try {
       if (!('showDirectoryPicker' in window)) {
@@ -762,9 +808,16 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     }
   }, [appendOutput, appendTerminal]);
 
-  const createUntitledFile = () => {
+  const createFile = (requestedName: string, languageKey: string) => {
     const parentPath = activeTab ? getParentPath(activeTab) : rootName;
-    const fileName = `untitled-${newItemSeed}.js`;
+    const languageOption =
+      FILE_LANGUAGE_OPTIONS.find((option) => option.key === languageKey) ||
+      FILE_LANGUAGE_OPTIONS[0];
+    const trimmedName = requestedName.trim();
+    const fileName =
+      trimmedName.includes('.') || !languageOption.extension
+        ? trimmedName
+        : `${trimmedName}.${languageOption.extension}`;
     const filePath = `${parentPath}/${fileName}`;
     const file: FileItem = { name: fileName, type: 'file', content: '' };
 
@@ -784,6 +837,17 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     setExpandedFolders((prev) => new Set([...prev, parentPath]));
     appendOutput('info', `Created ${filePath}`);
     appendTerminal('success', `touch ${getPathLabel(rootName, filePath)}`);
+  };
+
+  const submitCreateFileDialog = () => {
+    const trimmedName = createFileDialog.name.trim();
+    if (!trimmedName) {
+      appendOutput('warn', 'Please enter a file name before creating a file');
+      return;
+    }
+
+    createFile(trimmedName, createFileDialog.languageKey);
+    closeCreateFileDialog();
   };
 
   const createUntitledFolder = () => {
@@ -1183,6 +1247,59 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     </div>
   );
 
+  const renderCreateFileDialog = () => {
+    if (!createFileDialog.isOpen) {
+      return null;
+    }
+
+    return (
+      <div className="dialog-backdrop" onClick={closeCreateFileDialog}>
+        <div className="dialog-card" onClick={(event) => event.stopPropagation()}>
+          <div className="dialog-title">Create New File</div>
+          <label className="dialog-field">
+            <span>File Name</span>
+            <input
+              className="dialog-input"
+              value={createFileDialog.name}
+              onChange={(event) =>
+                setCreateFileDialog((prev) => ({ ...prev, name: event.target.value }))
+              }
+              placeholder="example"
+              autoFocus
+            />
+          </label>
+          <label className="dialog-field">
+            <span>Language</span>
+            <select
+              className="dialog-input"
+              value={createFileDialog.languageKey}
+              onChange={(event) =>
+                setCreateFileDialog((prev) => ({ ...prev, languageKey: event.target.value }))
+              }
+            >
+              {FILE_LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label} (.{option.extension})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="dialog-help">
+            If you leave off the extension, DevSpace will add one from the selected language.
+          </div>
+          <div className="dialog-actions">
+            <button type="button" className="btn" onClick={closeCreateFileDialog}>
+              Cancel
+            </button>
+            <button type="button" className="btn btn-primary" onClick={submitCreateFileDialog}>
+              Create File
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="devspace-container">
       <div className="devspace-header">
@@ -1200,7 +1317,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
               <div className="dropdown-menu" onClick={closeMenu}>
                 <div className="menu-item-option" onClick={openFolderFromPC}>Open Folder...</div>
                 <div className="menu-item-divider" />
-                <div className="menu-item-option" onClick={createUntitledFile}>New File</div>
+                <div className="menu-item-option" onClick={openCreateFileDialog}>New File</div>
                 <div className="menu-item-option" onClick={createUntitledFolder}>New Folder</div>
                 <div className="menu-item-divider" />
                 <div className="menu-item-option" onClick={saveFile}>Save</div>
@@ -1275,7 +1392,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
               <span>Explorer</span>
               <div className="sidebar-actions">
                 <button className="icon-btn" title="Open Folder" onClick={openFolderFromPC}>O</button>
-                <button className="icon-btn" title="New File" onClick={createUntitledFile}>+</button>
+                <button className="icon-btn" title="New File" onClick={openCreateFileDialog}>+</button>
                 <button className="icon-btn" title="New Folder" onClick={createUntitledFolder}>[]</button>
               </div>
             </div>
@@ -1395,6 +1512,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
           </div>
         </div>
       </div>
+      {renderCreateFileDialog()}
     </div>
   );
 };
