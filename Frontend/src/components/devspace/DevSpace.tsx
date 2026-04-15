@@ -67,7 +67,7 @@ export interface DevSpaceProps {
   onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
-type PanelName = 'console' | 'problems' | 'output' | 'terminal';
+type PanelName = 'console' | 'problems' | 'output' | 'terminal' | 'preview';
 
 const FILE_LANGUAGE_OPTIONS = [
   { key: 'plaintext', label: 'Plain Text', extension: 'txt' },
@@ -507,6 +507,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   const [problems, setProblems] = useState<ProblemEntry[]>([]);
   const [currentPanel, setCurrentPanel] = useState<PanelName>('terminal');
   const [editorContent, setEditorContent] = useState('');
+  const [htmlPreview, setHtmlPreview] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -1020,8 +1021,10 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     }
 
     if (ext === 'html') {
-      appendConsole('info', `Preview available for ${activeTab}`);
-      appendOutput('success', 'HTML file validated and ready for preview');
+      setHtmlPreview(editorContent);
+      appendConsole('success', `HTML preview generated for ${activeTab}`);
+      appendOutput('success', 'HTML rendered in Preview panel');
+      setCurrentPanel('output');
       return;
     }
 
@@ -1601,6 +1604,9 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
               <div className={`panel-tab ${currentPanel === 'console' ? 'active' : ''}`} onClick={() => setCurrentPanel('console')}>
                 Console <span className="panel-count">{consoleLogs.length}</span>
               </div>
+              <div className={`panel-tab ${currentPanel === 'preview' ? 'active' : ''}`} onClick={() => setCurrentPanel('preview')}>
+                Preview
+              </div>
               <div className={`panel-tab ${currentPanel === 'terminal' ? 'active' : ''}`} onClick={() => setCurrentPanel('terminal')}>
                 Terminal
               </div>
@@ -1619,6 +1625,16 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
               {currentPanel === 'problems' && renderProblemsPanel()}
               {currentPanel === 'output' && renderLogPanel(outputLogs, 'Editor and workspace activity will appear here')}
               {currentPanel === 'console' && renderLogPanel(consoleLogs, 'Application runtime logs will appear here')}
+              {currentPanel === 'preview' && htmlPreview && (
+                <iframe
+                  title="HTML Preview"
+                  srcDoc={htmlPreview}
+                  style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
+                />
+              )}
+              {currentPanel === 'preview' && !htmlPreview && (
+                <div className="empty-panel-message">No HTML preview. Run an HTML file to see preview here.</div>
+              )}
               {currentPanel === 'terminal' && renderTerminalPanel()}
             </div>
           </div>
