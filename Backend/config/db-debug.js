@@ -1,4 +1,4 @@
-// Backend/config/db.js
+// Temporary debug version - replace config/db.js temporarily for deployment testing
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
