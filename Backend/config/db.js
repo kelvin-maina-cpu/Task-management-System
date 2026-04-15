@@ -5,7 +5,7 @@ const connectDB = async () => {
   try {
     const uri = process.env.NODE_ENV === 'test' ? process.env.TEST_DB_URI || process.env.MONGO_URI : process.env.MONGO_URI;
     
-    // Temporary debug - remove after fixing
+    // Temporary debug - remove after fixing deployment
     console.log('MONGO_URI type:', typeof uri);
     console.log('MONGO_URI value:', JSON.stringify(uri));
     console.log('MONGO_URI starts with:', uri?.substring(0, 15));

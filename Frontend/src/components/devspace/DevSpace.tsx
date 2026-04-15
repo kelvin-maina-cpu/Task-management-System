@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
+import { Terminal } from 'xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { io, type Socket } from 'socket.io-client';
+import 'xterm/css/xterm.css';
 import './DevSpace.css';
-import { fileService } from '../../services/fileService';
 
 export interface FileItem {
   name: string;
@@ -48,6 +51,13 @@ interface CreateFileDialogState {
   isOpen: boolean;
   name: string;
   languageKey: string;
+}
+
+interface TerminalSessionState {
+  id: string;
+  title: string;
+  connected: boolean;
+  cwd: string;
 }
 
 export interface DevSpaceProps {
@@ -217,26 +227,6 @@ const getPathLabel = (rootName: string, path: string) => {
   }
 
   return `/${splitPath(path).slice(1).join('/')}`;
-};
-
-const getWorkspaceRelativePath = (rootName: string, path: string) => {
-  if (!path || path === rootName) {
-    return '.';
-  }
-
-  return splitPath(path).slice(1).join('/') || '.';
-};
-
-const resolvePath = (input: string, currentDir: string, rootName: string) => {
-  if (!input || input === '.') {
-    return currentDir;
-  }
-
-  const isAbsolute = input.startsWith('/');
-  const baseSegments = isAbsolute ? [rootName] : splitPath(currentDir);
-  const extraSegments = splitPath(input);
-
-  return buildPath([...baseSegments, ...extraSegments]);
 };
 
 const cloneTree = (item: FileItem): FileItem => ({
@@ -488,6 +478,20 @@ const loadLocalDirectoryTree = async (
   };
 };
 
+const terminalEntryToAnsi = (entry: Pick<TerminalEntry, 'kind' | 'text'>) => {
+  const colors: Record<TerminalEntry['kind'], string> = {
+    command: '\x1b[36m',
+    output: '\x1b[37m',
+    info: '\x1b[90m',
+    error: '\x1b[31m',
+    success: '\x1b[32m',
+  };
+
+  return `${colors[entry.kind]}${entry.text}\x1b[0m`;
+};
+
+const TERMINAL_HISTORY_STORAGE_KEY = 'devspace-terminal-history';
+
 export const DevSpace: React.FC<DevSpaceProps> = ({
   initialFileTree,
   readOnly = false,
@@ -514,20 +518,37 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     name: '',
     languageKey: 'javascript',
   });
-  const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([
-    { id: 'terminal-welcome-1', kind: 'info', text: 'DevSpace PowerShell ready. Type "help" to list commands.' },
-    { id: 'terminal-welcome-2', kind: 'info', text: 'Commands run in the backend project workspace using PowerShell.' },
+  const [terminalSessions, setTerminalSessions] = useState<TerminalSessionState[]>([
+    {
+      id: 'terminal-1',
+      title: 'PowerShell 1',
+      connected: false,
+      cwd: '.',
+    },
   ]);
-  const [terminalInput, setTerminalInput] = useState('');
-  const [terminalCwd, setTerminalCwd] = useState(fileTree.name);
+  const [activeTerminalId, setActiveTerminalId] = useState('terminal-1');
   const [newItemSeed, setNewItemSeed] = useState(1);
+  const [recentTerminalCommands, setRecentTerminalCommands] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(TERMINAL_HISTORY_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const editorRef = useRef<any>(null);
-  const terminalScrollRef = useRef<HTMLDivElement | null>(null);
+  const terminalContainerRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const xtermRefs = useRef<Map<string, Terminal>>(new Map());
+  const fitAddonRefs = useRef<Map<string, FitAddon>>(new Map());
+  const terminalSocketRefs = useRef<Map<string, Socket>>(new Map());
+  const terminalInputBuffersRef = useRef<Map<string, string>>(new Map());
+  const terminalEntriesRef = useRef<TerminalEntry[]>([]);
   const localRootHandleRef = useRef<any>(null);
   const localFileHandlesRef = useRef<Map<string, any>>(new Map());
 
   const rootName = fileTree.name;
+  const activeTerminalSession = terminalSessions.find((session) => session.id === activeTerminalId) || terminalSessions[0];
 
   const appendConsole = useCallback((type: LogEntry['type'], message: string) => {
     setConsoleLogs((prev) => [...prev, { time: getTimestamp(), type, message }]);
@@ -538,7 +559,25 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   }, []);
 
   const appendTerminal = useCallback((kind: TerminalEntry['kind'], text: string) => {
-    setTerminalEntries((prev) => [...prev, { id: `${Date.now()}-${prev.length}`, kind, text }]);
+    const entry = { id: `${Date.now()}-${terminalEntriesRef.current.length}`, kind, text };
+    terminalEntriesRef.current.push(entry);
+    const activeTerminal = xtermRefs.current.get(activeTerminalId);
+    if (activeTerminal) {
+      activeTerminal.writeln(terminalEntryToAnsi(entry));
+    }
+  }, [activeTerminalId]);
+
+  const rememberTerminalCommand = useCallback((command: string) => {
+    const trimmed = command.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setRecentTerminalCommands((prev) => {
+      const next = [trimmed, ...prev.filter((item) => item !== trimmed)].slice(0, 8);
+      localStorage.setItem(TERMINAL_HISTORY_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const syncProblems = useCallback((path: string, content: string) => {
@@ -569,10 +608,12 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
   }, [openMenu]);
 
   useEffect(() => {
-    if (terminalScrollRef.current) {
-      terminalScrollRef.current.scrollTop = terminalScrollRef.current.scrollHeight;
+    if (currentPanel === 'terminal') {
+      requestAnimationFrame(() => {
+        fitAddonRefs.current.get(activeTerminalId)?.fit();
+      });
     }
-  }, [terminalEntries]);
+  }, [activeTerminalId, currentPanel, isTerminalExpanded, sidebarVisible, isFullscreen]);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
@@ -790,7 +831,11 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
       setProblems([]);
       setCursor({ line: 1, column: 1 });
       setExpandedFolders(new Set([loaded.tree.name]));
-      setTerminalCwd(loaded.tree.name);
+      setTerminalSessions((prev) =>
+        prev.map((session) =>
+          session.id === activeTerminalId ? { ...session, cwd: '.' } : session
+        )
+      );
       setCurrentPanel('output');
 
       appendOutput('success', `Opened local folder: ${dirHandle.name}`);
@@ -806,7 +851,7 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
       appendOutput('error', `Failed to open local folder: ${message}`);
       appendTerminal('error', 'open folder failed');
     }
-  }, [appendOutput, appendTerminal]);
+  }, [activeTerminalId, appendOutput, appendTerminal]);
 
   const createFile = (requestedName: string, languageKey: string) => {
     const parentPath = activeTab ? getParentPath(activeTab) : rootName;
@@ -861,6 +906,76 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     setExpandedFolders((prev) => new Set([...prev, parentPath, folderPath]));
     appendOutput('info', `Created ${folderPath}`);
     appendTerminal('success', `mkdir ${getPathLabel(rootName, folderPath)}`);
+  };
+
+  const createTerminalSession = () => {
+    const nextIndex = terminalSessions.length + 1;
+    const sessionId = `terminal-${Date.now()}`;
+    setTerminalSessions((prev) => [
+      ...prev,
+      {
+        id: sessionId,
+        title: `PowerShell ${nextIndex}`,
+        connected: false,
+        cwd: '.',
+      },
+    ]);
+    setActiveTerminalId(sessionId);
+    setCurrentPanel('terminal');
+  };
+
+  const reconnectActiveTerminal = () => {
+    const session = activeTerminalSession;
+    if (!session) {
+      return;
+    }
+
+    disconnectTerminalSession(session.id);
+    const host = terminalContainerRefs.current.get(session.id);
+    if (host) {
+      host.innerHTML = '';
+      connectTerminalSession(session.id, host, session.cwd);
+    }
+  };
+
+  const copyTerminalSelection = async () => {
+    const terminal = activeTerminalSession ? xtermRefs.current.get(activeTerminalSession.id) : null;
+    const selectedText = terminal?.getSelection() || '';
+    if (!selectedText) {
+      appendOutput('warn', 'No terminal text selected to copy');
+      return;
+    }
+
+    await navigator.clipboard.writeText(selectedText);
+    appendOutput('success', 'Copied terminal selection');
+  };
+
+  const pasteIntoTerminal = async () => {
+    const terminal = activeTerminalSession ? xtermRefs.current.get(activeTerminalSession.id) : null;
+    const socket = activeTerminalSession ? terminalSocketRefs.current.get(activeTerminalSession.id) : null;
+    if (!terminal || !socket) {
+      return;
+    }
+
+    const text = await navigator.clipboard.readText();
+    if (!text) {
+      return;
+    }
+
+    socket.emit('terminal:input', text);
+    terminal.focus();
+  };
+
+  const runRecentTerminalCommand = (command: string) => {
+    const socket = activeTerminalSession ? terminalSocketRefs.current.get(activeTerminalSession.id) : null;
+    const terminal = activeTerminalSession ? xtermRefs.current.get(activeTerminalSession.id) : null;
+    if (!socket || !terminal) {
+      return;
+    }
+
+    rememberTerminalCommand(command);
+    socket.emit('terminal:input', `${command}\r`);
+    terminal.focus();
   };
 
   const handleRunCode = useCallback(() => {
@@ -948,179 +1063,146 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
     });
   }, []);
 
-  const executeTerminalCommand = useCallback((rawInput: string) => {
-    const trimmed = rawInput.trim();
-    appendTerminal('command', `PS ${getPathLabel(rootName, terminalCwd)}> ${trimmed}`);
+  const disconnectTerminalSession = useCallback((sessionId: string) => {
+    terminalSocketRefs.current.get(sessionId)?.disconnect();
+    terminalSocketRefs.current.delete(sessionId);
+    xtermRefs.current.get(sessionId)?.dispose();
+    xtermRefs.current.delete(sessionId);
+    fitAddonRefs.current.delete(sessionId);
+    terminalInputBuffersRef.current.delete(sessionId);
+    setTerminalSessions((prev) =>
+      prev.map((session) =>
+        session.id === sessionId ? { ...session, connected: false } : session
+      )
+    );
+  }, []);
 
-    if (!trimmed) {
+  const connectTerminalSession = useCallback((sessionId: string, host: HTMLDivElement, cwd = '.') => {
+    if (xtermRefs.current.has(sessionId)) {
       return;
     }
 
-    const [command, ...rest] = trimmed.split(/\s+/);
-    const argument = rest.join(' ');
+    const terminal = new Terminal({
+      cursorBlink: true,
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      fontSize: 13,
+      theme: {
+        background: '#0d1117',
+        foreground: '#c9d1d9',
+      },
+      convertEol: true,
+      scrollback: 5000,
+    });
+    const fitAddon = new FitAddon();
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || window.location.origin;
+    const socketBaseUrl = apiBase.replace(/\/api\/?$/, '');
+    const token = localStorage.getItem('accessToken');
+    const socket = io(`${socketBaseUrl}/terminal`, {
+      path: '/socket.io',
+      transports: ['websocket'],
+      auth: { token, cwd },
+    });
 
-    if (command === 'help') {
-      appendTerminal('output', 'Built-ins: help, clear, cd <path>, tree, cat <path>, open <path>, save, run, tabs, problems, output, console');
-      appendTerminal('output', 'PowerShell-backed commands: git status, git push, npm run build, Get-ChildItem, Get-Location, php artisan, node ...');
-      return;
-    }
+    terminal.loadAddon(fitAddon);
+    terminal.open(host);
+    fitAddon.fit();
+    terminal.writeln('\x1b[90mDevSpace PowerShell ready. Interactive session powered by xterm.js and node-pty.\x1b[0m');
 
-    if (command === 'clear') {
-      setTerminalEntries([]);
-      return;
-    }
+    terminal.onData((data) => {
+      socket.emit('terminal:input', data);
 
-    if (command === 'tree') {
-      const targetPath = resolvePath(argument || '.', terminalCwd, rootName);
-      const target = findItem(fileTree, targetPath);
-      if (!target) {
-        appendTerminal('error', `Path not found: ${argument || '.'}`);
-        return;
+      const currentBuffer = terminalInputBuffersRef.current.get(sessionId) || '';
+      if (data === '\r') {
+        rememberTerminalCommand(currentBuffer);
+        terminalInputBuffersRef.current.set(sessionId, '');
+      } else if (data === '\u007f') {
+        terminalInputBuffersRef.current.set(sessionId, currentBuffer.slice(0, -1));
+      } else if (data >= ' ' && data !== '\u007f') {
+        terminalInputBuffersRef.current.set(sessionId, `${currentBuffer}${data}`);
       }
+    });
 
-      renderTreeLines(target).forEach((line) => appendTerminal('output', line));
-      return;
-    }
-
-    if (command === 'cd') {
-      const nextPath = resolvePath(argument || '/', terminalCwd, rootName);
-      const item = findItem(fileTree, nextPath);
-      if (!item || item.type !== 'folder') {
-        appendTerminal('error', `Directory not found: ${argument || '/'}`);
-        return;
-      }
-
-      setTerminalCwd(nextPath);
-      appendTerminal('success', `cwd ${getPathLabel(rootName, nextPath)}`);
-      return;
-    }
-
-    if (command === 'cat') {
-      const targetPath = resolvePath(argument, terminalCwd, rootName);
-      const item = findItem(fileTree, targetPath);
-      if (!item || item.type !== 'file') {
-        appendTerminal('error', `File not found: ${argument}`);
-        return;
-      }
-
-      (item.content || '').split('\n').forEach((line) => appendTerminal('output', line || ' '));
-      return;
-    }
-
-    if (command === 'open') {
-      const targetPath = resolvePath(argument, terminalCwd, rootName);
-      const item = findItem(fileTree, targetPath);
-      if (!item || item.type !== 'file') {
-        appendTerminal('error', `File not found: ${argument}`);
-        return;
-      }
-
-      openFile(targetPath);
-      appendTerminal('success', `opened ${getPathLabel(rootName, targetPath)}`);
-      return;
-    }
-
-    if (command === 'save') {
-      saveFile();
-      return;
-    }
-
-    if (command === 'run') {
-      handleRunCode();
-      appendTerminal('info', 'Run triggered. See Console and Output panels.');
-      return;
-    }
-
-    if (command === 'tabs') {
-      if (openTabs.length === 0) {
-        appendTerminal('output', 'No open tabs');
-        return;
-      }
-
-      openTabs.forEach((tab) =>
-        appendTerminal('output', `${tab.path === activeTab ? '*' : ' '} ${getPathLabel(rootName, tab.path)}${tab.modified ? ' (modified)' : ''}`)
-      );
-      return;
-    }
-
-    if (command === 'problems') {
-      if (problems.length === 0) {
-        appendTerminal('output', 'No problems detected');
-        return;
-      }
-
-      problems.forEach((problem) =>
-        appendTerminal(
-          problem.severity === 'error' ? 'error' : 'info',
-          `${problem.severity.toUpperCase()} ${problem.file}:${problem.line}:${problem.column} ${problem.message}`
+    socket.on('connect', () => {
+      setTerminalSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId ? { ...session, connected: true } : session
         )
       );
-      return;
-    }
+    });
 
-    if (command === 'output') {
-      if (outputLogs.length === 0) {
-        appendTerminal('output', 'Output is empty');
-        return;
+    socket.on('disconnect', () => {
+      setTerminalSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId ? { ...session, connected: false } : session
+        )
+      );
+    });
+
+    socket.on('terminal:ready', (payload: { cwd?: string }) => {
+      setTerminalSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId
+            ? { ...session, cwd: payload.cwd || session.cwd, connected: true }
+            : session
+        )
+      );
+      terminal.writeln('\x1b[32mPowerShell session connected.\x1b[0m');
+    });
+
+    socket.on('terminal:data', (data: string) => {
+      terminal.write(data);
+    });
+
+    socket.on('terminal:error', (payload: { message?: string }) => {
+      terminal.writeln(`\x1b[31m${payload.message || 'Terminal error'}\x1b[0m`);
+    });
+
+    socket.on('terminal:exit', (payload: { exitCode?: number }) => {
+      terminal.writeln(`\r\n\x1b[31mTerminal exited with code ${payload.exitCode ?? 0}\x1b[0m`);
+      setTerminalSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId ? { ...session, connected: false } : session
+        )
+      );
+    });
+
+    xtermRefs.current.set(sessionId, terminal);
+    fitAddonRefs.current.set(sessionId, fitAddon);
+    terminalSocketRefs.current.set(sessionId, socket);
+    terminalInputBuffersRef.current.set(sessionId, '');
+  }, [rememberTerminalCommand]);
+
+  useEffect(() => {
+    terminalSessions.forEach((session) => {
+      const host = terminalContainerRefs.current.get(session.id);
+      if (host && !xtermRefs.current.has(session.id)) {
+        connectTerminalSession(session.id, host, session.cwd);
       }
+    });
+  }, [connectTerminalSession, disconnectTerminalSession, terminalSessions]);
 
-      outputLogs.slice(-10).forEach((entry) => appendTerminal('output', `${entry.time} ${entry.type.toUpperCase()} ${entry.message}`));
-      return;
-    }
+  useEffect(() => () => {
+    Array.from(terminalSocketRefs.current.keys()).forEach((sessionId) => {
+      disconnectTerminalSession(sessionId);
+    });
+  }, [disconnectTerminalSession]);
 
-    if (command === 'console') {
-      if (consoleLogs.length === 0) {
-        appendTerminal('output', 'Console is empty');
-        return;
-      }
+  useEffect(() => {
+    const activeTerminal = xtermRefs.current.get(activeTerminalId);
+    const activeFitAddon = fitAddonRefs.current.get(activeTerminalId);
+    const activeSocket = terminalSocketRefs.current.get(activeTerminalId);
 
-      consoleLogs.slice(-10).forEach((entry) => appendTerminal('output', `${entry.time} ${entry.type.toUpperCase()} ${entry.message}`));
-      return;
-    }
-
-    const workspaceCwd = getWorkspaceRelativePath(rootName, terminalCwd);
-
-    fileService.executeWorkspaceCommand(trimmed, workspaceCwd)
-      .then((result) => {
-        if (result.stdout.trim()) {
-          result.stdout.split(/\r?\n/).forEach((line) => {
-            if (line.trim().length > 0) {
-              appendTerminal('output', line);
-            }
-          });
-        }
-
-        if (result.stderr.trim()) {
-          result.stderr.split(/\r?\n/).forEach((line) => {
-            if (line.trim().length > 0) {
-              appendTerminal('error', line);
-            }
-          });
-        }
-
-        if (!result.stdout.trim() && !result.stderr.trim()) {
-          appendTerminal(result.exitCode === 0 ? 'success' : 'error', `exit ${result.exitCode}`);
-        } else if (result.exitCode === 0) {
-          appendTerminal('success', `exit ${result.exitCode}`);
-        } else {
-          appendTerminal('error', `exit ${result.exitCode}`);
-        }
-      })
-      .catch((error) => {
-        const message =
-          error?.response?.data?.error ||
-          error?.message ||
-          'Command failed';
-        appendTerminal('error', message);
+    if (activeTerminal && activeFitAddon && activeSocket && currentPanel === 'terminal') {
+      requestAnimationFrame(() => {
+        activeFitAddon.fit();
+        activeSocket.emit('terminal:resize', {
+          cols: activeTerminal.cols,
+          rows: activeTerminal.rows,
+        });
+        activeTerminal.focus();
       });
-  }, [activeTab, consoleLogs, fileTree, handleRunCode, openFile, openTabs, outputLogs, problems, rootName, saveFile, terminalCwd, appendTerminal]);
-
-  const handleTerminalSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const command = terminalInput;
-    setTerminalInput('');
-    executeTerminalCommand(command);
-  };
+    }
+  }, [activeTerminalId, currentPanel, isTerminalExpanded, sidebarVisible, isFullscreen, terminalSessions]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -1227,23 +1309,62 @@ export const DevSpace: React.FC<DevSpaceProps> = ({
 
   const renderTerminalPanel = () => (
     <div className="terminal-panel">
-      <div className="terminal-history" ref={terminalScrollRef}>
-        {terminalEntries.map((entry) => (
-          <div key={entry.id} className={`terminal-line ${entry.kind}`}>
-            {entry.text}
-          </div>
+      <div className="terminal-toolbar">
+        <div className="terminal-session-tabs">
+          {terminalSessions.map((session) => (
+            <button
+              key={session.id}
+              type="button"
+              className={`terminal-session-tab ${session.id === activeTerminalId ? 'active' : ''}`}
+              onClick={() => setActiveTerminalId(session.id)}
+            >
+              {session.title}
+            </button>
+          ))}
+          <button type="button" className="terminal-toolbar-btn" onClick={createTerminalSession}>
+            New Terminal
+          </button>
+        </div>
+        <div className="terminal-toolbar-actions">
+          <span className={`terminal-status ${activeTerminalSession?.connected ? 'connected' : 'disconnected'}`}>
+            {activeTerminalSession?.connected ? 'PowerShell Connected' : 'PowerShell Disconnected'}
+          </span>
+          <button type="button" className="terminal-toolbar-btn" onClick={reconnectActiveTerminal}>
+            Reconnect
+          </button>
+          <button type="button" className="terminal-toolbar-btn" onClick={copyTerminalSelection}>
+            Copy
+          </button>
+          <button type="button" className="terminal-toolbar-btn" onClick={pasteIntoTerminal}>
+            Paste
+          </button>
+        </div>
+      </div>
+      {recentTerminalCommands.length > 0 && (
+        <div className="terminal-history-bar">
+          {recentTerminalCommands.map((command) => (
+            <button
+              key={command}
+              type="button"
+              className="terminal-history-chip"
+              onClick={() => runRecentTerminalCommand(command)}
+            >
+              {command}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="terminal-session-hosts">
+        {terminalSessions.map((session) => (
+          <div
+            key={session.id}
+            className={`terminal-history xterm-host ${session.id === activeTerminalId ? 'active' : 'hidden'}`}
+            ref={(node) => {
+              terminalContainerRefs.current.set(session.id, node);
+            }}
+          />
         ))}
       </div>
-      <form className="terminal-form" onSubmit={handleTerminalSubmit}>
-        <span className="terminal-prompt">PS {getPathLabel(rootName, terminalCwd)}&gt;</span>
-        <input
-          className="terminal-input"
-          value={terminalInput}
-          onChange={(event) => setTerminalInput(event.target.value)}
-          placeholder="Type a command..."
-          spellCheck={false}
-        />
-      </form>
     </div>
   );
 

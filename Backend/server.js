@@ -7,7 +7,9 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const http = require('http');
 const connectDB = require('./config/db');
+const { initializeTerminalSocket } = require('./services/terminalSocketService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -88,7 +90,9 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  const server = http.createServer(app);
+  initializeTerminalSocket(server);
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
