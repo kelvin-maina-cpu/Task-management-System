@@ -1,7 +1,19 @@
-// Only load .env file in development
-// In production (Render), environment variables are already injected
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+
+const envFileByMode = {
+  test: '.env.test',
+  production: '.env.production',
+};
+
+const envPath = path.resolve(__dirname, envFileByMode[process.env.NODE_ENV] || '.env');
+
+// Load local env files when present, while keeping real platform env vars as the source of truth.
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath, override: false });
+} else if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.resolve(__dirname, '.env'), override: false });
 }
 
 const express = require('express');

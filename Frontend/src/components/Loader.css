@@ -1,73 +1,106 @@
-.loader-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: #0a0a0a;
+.loader-shell {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.loader-shell--fullscreen {
+  position: fixed;
+  inset: 0;
   z-index: 9999;
+  backdrop-filter: blur(14px);
+  background:
+    radial-gradient(circle at top, rgba(34, 211, 238, 0.12), transparent 32%),
+    radial-gradient(circle at bottom, rgba(250, 204, 21, 0.08), transparent 28%),
+    rgba(2, 6, 23, 0.78);
+}
+
+.loader-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.loader-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.72rem;
+  color: rgba(226, 232, 240, 0.86);
 }
 
 .svg-frame {
   position: relative;
-  width: 300px;
-  height: 300px;
-  transform-style: preserve-3d;
+  width: 240px;
+  height: 240px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
 }
 
 .svg-frame svg {
   position: absolute;
-  transition: 0.5s;
-  z-index: calc(1 - (0.2 * var(--j)));
-  transform-origin: center;
-  width: 344px;
-  height: 344px;
+  width: 100%;
+  height: 100%;
   fill: none;
-}
-
-.svg-frame:hover svg {
-  transform: rotate(-80deg) skew(30deg) translateX(calc(45px * var(--i))) translateY(calc(-35px * var(--i)));
-}
-
-.svg-frame svg #center {
-  transition: 0.5s;
+  z-index: calc(10 - var(--j));
   transform-origin: center;
-}
-
-.svg-frame:hover svg #center {
-  transform: rotate(-30deg) translateX(45px) translateY(-3px);
 }
 
 #out2 {
-  animation: rotate16 7s ease-in-out infinite alternate;
+  animation: loader-rotate 7s ease-in-out infinite alternate;
   transform-origin: center;
 }
 
 #out3 {
-  animation: rotate16 3s ease-in-out infinite alternate;
+  animation: loader-rotate 3s ease-in-out infinite alternate;
   transform-origin: center;
-  stroke: #ff0;
+  stroke: #facc15;
 }
 
-#inner3, #inner1 {
-  animation: rotate16 4s ease-in-out infinite alternate;
+#inner3,
+#inner1 {
+  animation: loader-rotate 4s ease-in-out infinite alternate;
   transform-origin: center;
 }
 
 #center1 {
-  fill: #ff0;
-  animation: rotate16 2s ease-in-out infinite alternate;
+  fill: #facc15;
+  animation: loader-rotate 2s ease-in-out infinite alternate;
   transform-origin: center;
 }
 
-@keyframes rotate16 {
+.svg-frame #center {
+  transform-origin: center;
+  animation: loader-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes loader-rotate {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes loader-pulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .svg-frame {
+    width: 180px;
+    height: 180px;
   }
 }

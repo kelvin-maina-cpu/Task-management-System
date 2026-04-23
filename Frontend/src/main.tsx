@@ -6,13 +6,14 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './app/router';
 import { setCredentials } from './features/auth/authSlice';
 import { useGetCurrentUserQuery } from './features/auth/authApi';
+import Loader from './components/Loader';
 import './index.css';
 import './styles/loader.css';
 
 // Component to initialize auth state when page loads
 const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('accessToken');
-  const { data: user } = useGetCurrentUserQuery(undefined, {
+  const { data: user, isLoading } = useGetCurrentUserQuery(undefined, {
     skip: !token,
   });
 
@@ -31,7 +32,10 @@ const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
 
-  // Don't block rendering while loading, just render children
+  if (isLoading && !user) {
+    return <Loader fullscreen label="Restoring session" />;
+  }
+
   return <>{children}</>;
 };
 

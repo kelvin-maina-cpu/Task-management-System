@@ -18,6 +18,7 @@ import { EditProjectPage } from '../features/projects/EditProjectPage';
 import MyProjectsPage from '../features/projects/MyProjectsPage';
 import { BeginnerWorkspace } from '../features/workspace/BeginnerWorkspace';
 import { SeniorWorkspace } from '../features/workspace/SeniorWorkspace';
+import { AppShell } from '../components/AppShell';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -62,118 +63,123 @@ export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />,
-  },
-  {
-    path: '/beginner',
-    element: <BeginnerGuidePage />,
-  },
-  {
-    path: '/beginner-workspace',
-    element: (
-      <ProtectedRoute>
-        <BeginnerWorkspace />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/senior-workspace',
-    element: (
-      <ProtectedRoute>
-        <SeniorWorkspace />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/login',
-    element: (
-      <PublicRoute>
-        <LoginPage />
-      </PublicRoute>
-    ),
-  },
-  {
-    path: '/signup',
-    element: (
-      <PublicRoute>
-        <SignupPage />
-      </PublicRoute>
-    ),
-  },
-  {
-    path: '/',
-    element: (
-      <ProtectedRoute>
-        <MainLayout />
-      </ProtectedRoute>
-    ),
+    element: <AppShell />,
     children: [
       {
-        path: 'dashboard',
-        element: <DashboardPage />,
+        index: true,
+        element: <LandingPage />,
       },
       {
-        path: 'workspace/beginner',
-        element: <BeginnerWorkspace />,
+        path: 'beginner',
+        element: <BeginnerGuidePage />,
       },
       {
-        path: 'workspace/senior',
-        element: <SeniorWorkspace />,
+        path: 'beginner-workspace',
+        element: (
+          <ProtectedRoute>
+            <BeginnerWorkspace />
+          </ProtectedRoute>
+        ),
       },
       {
-        path: 'projects/suggestions',
-        element: <ProjectSuggestions />,
+        path: 'senior-workspace',
+        element: (
+          <ProtectedRoute>
+            <SeniorWorkspace />
+          </ProtectedRoute>
+        ),
       },
       {
-        path: 'projects/:projectId',
-        element: <ProjectDetailPage />,
+        path: 'login',
+        element: (
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        ),
       },
       {
-        path: 'projects/:projectId/technologies',
-        element: <TechnologyRecommendation />,
+        path: 'signup',
+        element: (
+          <PublicRoute>
+            <SignupPage />
+          </PublicRoute>
+        ),
       },
       {
-        path: 'projects/:projectId/collaboration',
-        element: <KanbanBoard />,
-      },
-      {
-        path: 'projects/:projectId/workspace',
-        element: <ProjectDevSpace />,
-      },
-      {
-        path: 'projects',
+        element: (
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        ),
         children: [
           {
-            index: true,
-            element: <MyProjectsPage />,
+            path: 'dashboard',
+            element: <DashboardPage />,
           },
           {
-            path: ':id',
+            path: 'workspace/beginner',
+            element: <BeginnerWorkspace />,
+          },
+          {
+            path: 'workspace/senior',
+            element: <SeniorWorkspace />,
+          },
+          {
+            path: 'projects/suggestions',
+            element: <ProjectSuggestions />,
+          },
+          {
+            path: 'projects/:projectId',
             element: <ProjectDetailPage />,
           },
           {
-            path: ':id/edit',
-            element: <EditProjectPage />,
+            path: 'projects/:projectId/technologies',
+            element: <TechnologyRecommendation />,
+          },
+          {
+            path: 'projects/:projectId/collaboration',
+            element: <KanbanBoard />,
+          },
+          {
+            path: 'projects/:projectId/workspace',
+            element: <ProjectDevSpace />,
+          },
+          {
+            path: 'projects',
+            children: [
+              {
+                index: true,
+                element: <MyProjectsPage />,
+              },
+              {
+                path: ':id',
+                element: <ProjectDetailPage />,
+              },
+              {
+                path: ':id/edit',
+                element: <EditProjectPage />,
+              },
+            ],
           },
         ],
       },
-    ],
-  },
-  {
-    path: '/admin',
-    element: (
-      <ProtectedRoute requiredRole="mentor">
-        <AdminLayout />
-      </ProtectedRoute>
-    ),
-    children: [
       {
-        path: '',
-        element: <ProjectApproval />,
-      },
-      {
-        path: 'projects',
-        element: <ProjectApproval />,
+        path: 'admin',
+        element: (
+          <ProtectedRoute requiredRole="mentor">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: '',
+            element: <ProjectApproval />,
+          },
+          {
+            path: 'projects',
+            element: <ProjectApproval />,
+          },
+        ],
       },
     ],
   },
