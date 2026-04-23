@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Developer Hub Favicon</title>
+  <desc id="desc">Rounded square badge with a warm gradient and the letters D H.</desc>
+  <defs>
+    <linearGradient id="bg" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fde68a" />
+      <stop offset="0.52" stop-color="#f97316" />
+      <stop offset="1" stop-color="#fb7185" />
+    </linearGradient>
+    <linearGradient id="shine" x1="18" y1="12" x2="43" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7ed" stop-opacity="0.95" />
+      <stop offset="1" stop-color="#fff7ed" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="#0f172a" />
+  <rect x="8" y="8" width="48" height="48" rx="14" fill="url(#bg)" />
+  <path d="M16 14c10-6 24-6 34 2" fill="none" stroke="url(#shine)" stroke-linecap="round" stroke-width="4" opacity="0.85" />
+  <path d="M20 20h10.5c8 0 13.5 5.1 13.5 12.2S38.5 44 30.5 44H20V20Zm8.6 18c5.7 0 8.8-2.3 8.8-5.8s-3.1-5.8-8.8-5.8h-2.2V38h2.2Z" fill="#020617" />
+  <path d="M41.4 20h6.4v24h-6.4V34.5h-7.4V44H27.6V20H34v8.8h7.4V20Z" fill="#020617" />
+</svg>
