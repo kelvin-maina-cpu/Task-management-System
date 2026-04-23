@@ -51,13 +51,13 @@ export const ProjectDetailPage = () => {
   const isSampleProject = (projectId || '').startsWith('sample-');
 
   const handleEnroll = async () => {
-    if (isSampleProject) {
-      alert('This is a sample template preview. You can review the suggested technologies here, but it is not enrollable yet.');
+    if (!selectedStack) {
+      alert('Please select a technology stack first');
       return;
     }
 
-    if (!selectedStack) {
-      alert('Please select a technology stack first');
+    if (isSampleProject) {
+      navigate(`/projects/${projectId}/workspace`, { replace: true });
       return;
     }
 
@@ -214,15 +214,15 @@ export const ProjectDetailPage = () => {
 
             <button
               onClick={handleEnroll}
-              disabled={!selectedStack || enrolling || !!isEnrolled || isSampleProject}
+              disabled={!selectedStack || enrolling || !!isEnrolled}
               className="w-full mt-6 bg-purple-600 text-white py-3 rounded-lg font-semibold disabled:bg-slate-600 hover:bg-purple-700 transition disabled:cursor-not-allowed"
             >
-              {isSampleProject ? 'Sample Preview Only' : enrolling ? 'Starting Project...' : isEnrolled ? 'Already Enrolled' : 'Start Building'}
+              {isSampleProject ? 'Open Coding Workspace' : enrolling ? 'Starting Project...' : isEnrolled ? 'Already Enrolled' : 'Start Building'}
             </button>
 
             {isSampleProject && (
               <p className="mt-3 text-xs text-gray-400">
-                This sample is available for exploration and technology review.
+                This sample opens directly in the coding workspace using the selected stack.
               </p>
             )}
             
@@ -464,7 +464,7 @@ const MilestonesSection = ({ project }: { project: Project }) => {
 
   return (
     <div className="space-y-4">
-      {milestones
+      {[...milestones]
         .sort((a: Milestone, b: Milestone) => (a.order || 0) - (b.order || 0))
         .map((milestone: Milestone, idx: number) => (
         <div key={idx} className="bg-slate-800/50 border border-white/10 rounded-lg p-6 relative">
