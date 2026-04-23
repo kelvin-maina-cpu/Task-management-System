@@ -48,8 +48,14 @@ export const ProjectDetailPage = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [, setIsTransitioning] = useState(false);
+  const isSampleProject = (projectId || '').startsWith('sample-');
 
   const handleEnroll = async () => {
+    if (isSampleProject) {
+      alert('This is a sample template preview. You can review the suggested technologies here, but it is not enrollable yet.');
+      return;
+    }
+
     if (!selectedStack) {
       alert('Please select a technology stack first');
       return;
@@ -208,11 +214,17 @@ export const ProjectDetailPage = () => {
 
             <button
               onClick={handleEnroll}
-              disabled={!selectedStack || enrolling || !!isEnrolled}
+              disabled={!selectedStack || enrolling || !!isEnrolled || isSampleProject}
               className="w-full mt-6 bg-purple-600 text-white py-3 rounded-lg font-semibold disabled:bg-slate-600 hover:bg-purple-700 transition disabled:cursor-not-allowed"
             >
-              {enrolling ? 'Starting Project...' : isEnrolled ? 'Already Enrolled' : 'Start Building'}
+              {isSampleProject ? 'Sample Preview Only' : enrolling ? 'Starting Project...' : isEnrolled ? 'Already Enrolled' : 'Start Building'}
             </button>
+
+            {isSampleProject && (
+              <p className="mt-3 text-xs text-gray-400">
+                This sample is available for exploration and technology review.
+              </p>
+            )}
             
             {/* Edit button for created/enrolled projects */}
             {user && (isEnrolled || project.createdBy?._id === user.id) && (

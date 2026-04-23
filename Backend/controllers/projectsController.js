@@ -1,5 +1,22 @@
 const Project = require('../models/Project');
 const mongoose = require('mongoose');
+const { getSampleProjectTemplates, getSampleProjectTemplateById } = require('../data/sampleProjectTemplates');
+
+const matchesStack = (project, stack) => {
+  if (!stack) return true;
+
+  const query = stack.toLowerCase();
+  const technologyNames = [
+    ...(project.techStack || []),
+    ...((project.suggestedStacks || []).flatMap((item) =>
+      Array.isArray(item.technologies)
+        ? item.technologies.map((tech) => (typeof tech === 'string' ? tech : tech?.name)).filter(Boolean)
+        : []
+    )),
+  ].map((name) => name.toLowerCase());
+
+  return technologyNames.some((name) => name.includes(query));
+};
 
 // GET /api/projects/suggestions
 exports.getProjectSuggestions = async (req, res) => {
@@ -12,7 +29,20 @@ exports.getProjectSuggestions = async (req, res) => {
     if (difficulty) filter.difficulty = difficulty;
     if (domain) filter.domain = domain;
 
-    const projects = await Project.find(filter).limit(30);
+    const dbProjects = await Project.find(filter).limit(30).lean();
+    const sampleProjects = getSampleProjectTemplates().filter(
+      (project) =>
+        (!difficulty || project.difficulty === difficulty) &&
+        (!domain || project.domain === domain) &&
+        matchesStack(project, stack)
+    );
+
+    const projects = [
+      ...dbProjects,
+      ...sampleProjects.filter(
+        (sampleProject) => !dbProjects.some((dbProject) => dbProject.title?.toLowerCase() === sampleProject.title.toLowerCase())
+      ),
+    ].filter((project) => matchesStack(project, stack));
     console.log('✅ Found templates:', projects.length, projects.map(p => ({title: p.title, _id: p._id})));
     
     res.json(projects);
@@ -25,7 +55,15 @@ exports.getProjectSuggestions = async (req, res) => {
 // GET /api/projects/:id
 exports.getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    let project = null;
+
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      project = await Project.findById(req.params.id);
+    }
+
+    if (!project) {
+      project = getSampleProjectTemplateById(req.params.id);
+    }
     if (!project) return res.status(404).json({ error: 'Project not found' });
     res.json(project);
   } catch (error) {

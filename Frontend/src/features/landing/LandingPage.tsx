@@ -4,6 +4,7 @@ import type { RootState } from '../../app/store';
 import { logout } from '../../features/auth/authSlice';
 import { useLogoutMutation } from '../../features/auth/authApi';
 import { LandingActionButton } from './LandingActionButton';
+import { ThemeToggle } from '../../components/ThemeToggle';
 
 const quickActions = [
   {
@@ -78,8 +79,8 @@ export const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,_#fffaf5_0%,_#fff4e8_45%,_#f8fafc_100%)] text-slate-900">
-      <nav className="sticky top-0 z-50 border-b border-orange-100 bg-white/90 backdrop-blur">
+    <div className="theme-page">
+      <nav className="theme-surface-strong sticky top-0 z-50 border-b backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-rose-400 text-sm font-black text-slate-950">
@@ -87,27 +88,28 @@ export const LandingPage = () => {
             </span>
             <div>
               <p className="text-lg font-bold">Developer Hub</p>
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Learn. Build. Grow.</p>
+              <p className="theme-soft text-xs uppercase tracking-[0.24em]">Learn. Build. Grow.</p>
             </div>
           </Link>
 
           <div className="flex flex-wrap items-center gap-2 text-sm sm:gap-3">
-            <a href="#journey" className="rounded-full px-4 py-2 text-slate-600 transition hover:bg-orange-50 hover:text-slate-900">
+            <a href="#journey" className="theme-soft rounded-full px-4 py-2 transition hover:bg-orange-50 hover:text-slate-900">
               Journey
             </a>
             <a
               href="#technologies"
-              className="rounded-full px-4 py-2 text-slate-600 transition hover:bg-orange-50 hover:text-slate-900"
+              className="theme-soft rounded-full px-4 py-2 transition hover:bg-orange-50 hover:text-slate-900"
             >
               Technologies
             </a>
-            <a href="#lab" className="rounded-full px-4 py-2 text-slate-600 transition hover:bg-orange-50 hover:text-slate-900">
+            <a href="#lab" className="theme-soft rounded-full px-4 py-2 transition hover:bg-orange-50 hover:text-slate-900">
               Lab
             </a>
+            <ThemeToggle />
 
             {isAuthenticated ? (
               <>
-                <span className="rounded-full bg-slate-100 px-4 py-2 text-slate-700">{user?.name}</span>
+                <span className="theme-subcard theme-muted rounded-full border px-4 py-2">{user?.name}</span>
                 <LandingActionButton onClick={handleLogout} size="sm">
                   Logout
                 </LandingActionButton>
@@ -137,7 +139,7 @@ export const LandingPage = () => {
               Learn development in a simpler, clearer way.
             </h1>
 
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+            <p className="theme-muted mt-5 max-w-2xl text-lg leading-8">
               Developer Hub helps beginners understand the theory first, then move into tools, frameworks, and real
               project practice without feeling overwhelmed.
             </p>
@@ -156,43 +158,43 @@ export const LandingPage = () => {
                 <Link
                   key={item.title}
                   to={isAuthenticated ? item.toAuthenticated : item.toGuest}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200"
+                  className="theme-card theme-card-hover rounded-3xl border p-5 shadow-sm transition hover:-translate-y-1"
                 >
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">Quick access</p>
                   <h2 className="mt-3 text-xl font-semibold">{item.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
+                  <p className="theme-muted mt-3 text-sm leading-6">{item.description}</p>
                 </Link>
               ))}
             </div>
 
-            <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
+            <div className="theme-card mt-8 rounded-3xl border p-6 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Theory first</p>
               <h2 className="mt-3 text-2xl font-bold">What you will understand before you build</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 {learningSteps.map((step, index) => (
-                  <div key={step.title} className="rounded-2xl bg-slate-50 p-4">
+                  <div key={step.title} className="theme-subcard rounded-2xl border p-4">
                     <p className="text-sm font-semibold text-orange-600">Step {index + 1}</p>
-                    <h3 className="mt-2 text-lg font-semibold text-slate-900">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
+                    <h3 className="mt-2 text-lg font-semibold">{step.title}</h3>
+                    <p className="theme-muted mt-2 text-sm leading-6">{step.description}</p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="theme-card rounded-[2rem] border p-6 shadow-sm sm:p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Simple roadmap</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900">A clear path from theory to practice</h2>
+            <h2 className="mt-3 text-3xl font-bold">A clear path from theory to practice</h2>
             <div className="mt-6 space-y-4">
               {learningSteps.map((step, index) => (
-                <div key={step.title} className="rounded-2xl border border-slate-200 p-4">
+                <div key={step.title} className="theme-subcard rounded-2xl border p-4">
                   <div className="flex items-start gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-100 font-bold text-orange-700">
                       {index + 1}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
+                      <h3 className="text-lg font-semibold">{step.title}</h3>
+                      <p className="theme-muted mt-2 text-sm leading-6">{step.description}</p>
                     </div>
                   </div>
                 </div>
@@ -211,14 +213,14 @@ export const LandingPage = () => {
       </section>
 
       <section id="journey" className="px-4 py-14 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="theme-card mx-auto max-w-6xl rounded-[2rem] border p-6 shadow-sm sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Learning journey</p>
           <h2 className="mt-3 text-3xl font-bold sm:text-4xl">The platform is arranged in a beginner-friendly order</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {learningSteps.map((step) => (
-              <div key={step.title} className="rounded-2xl bg-slate-50 p-5">
-                <h3 className="text-lg font-semibold text-slate-900">{step.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{step.description}</p>
+              <div key={step.title} className="theme-subcard rounded-2xl border p-5">
+                <h3 className="text-lg font-semibold">{step.title}</h3>
+                <p className="theme-muted mt-3 text-sm leading-6">{step.description}</p>
               </div>
             ))}
           </div>
@@ -230,14 +232,14 @@ export const LandingPage = () => {
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Technologies</p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">See the main tools before combining them into a stack</h2>
-            <p className="mt-4 text-lg leading-8 text-slate-600">
+            <p className="theme-muted mt-4 text-lg leading-8">
               Each topic is easier to understand when it is introduced one by one instead of all at once.
             </p>
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {technologyGroups.map((item) => (
-              <div key={item} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700 shadow-sm">
+              <div key={item} className="theme-card rounded-2xl border p-4 text-sm font-medium shadow-sm">
                 {item}
               </div>
             ))}
@@ -265,10 +267,10 @@ export const LandingPage = () => {
       </section>
 
       <section className="px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl rounded-[2rem] border border-orange-100 bg-white p-8 text-center shadow-sm">
+        <div className="theme-card mx-auto max-w-4xl rounded-[2rem] border p-8 text-center shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Ready to begin?</p>
           <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Start with the basics, then grow into projects</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+          <p className="theme-muted mx-auto mt-4 max-w-2xl text-lg leading-8">
             This landing page is now focused on helping new learners understand where to go first and what each section
             means.
           </p>

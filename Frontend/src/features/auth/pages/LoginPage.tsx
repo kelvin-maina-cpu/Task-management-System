@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useLoginMutation } from '../authApi';
 import { setCredentials } from '../authSlice';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -26,15 +27,18 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.16),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(244,63,94,0.14),_transparent_28%),linear-gradient(180deg,_#0f172a_0%,_#111827_55%,_#0b1120_100%)] px-4">
+    <div className="theme-page flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-[28px] border border-white/10 bg-slate-900/60 p-8 backdrop-blur-md">
+        <div className="theme-surface rounded-[28px] border p-8 backdrop-blur-md">
+          <div className="mb-6 flex justify-end">
+            <ThemeToggle />
+          </div>
           <div className="mb-8 text-center">
-            <Link to="/" className="text-3xl font-bold text-white">
+            <Link to="/" className="text-3xl font-bold">
               Developer Hub
             </Link>
-            <h2 className="mt-4 text-2xl font-semibold text-white">Welcome Back</h2>
-            <p className="mt-2 text-gray-400">Sign in to continue your learning path and project lab work.</p>
+            <h2 className="mt-4 text-2xl font-semibold">Welcome Back</h2>
+            <p className="theme-muted mt-2">Sign in to continue your learning path and project lab work.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -45,7 +49,7 @@ export const LoginPage = () => {
             )}
 
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">
+              <label htmlFor="email" className="theme-muted mb-2 block text-sm font-medium">
                 Email Address
               </label>
               <input
@@ -54,13 +58,13 @@ export const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-2xl border border-white/10 bg-slate-700/40 px-4 py-3 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="theme-input w-full rounded-2xl border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-300">
+              <label htmlFor="password" className="theme-muted mb-2 block text-sm font-medium">
                 Password
               </label>
               <input
@@ -69,7 +73,7 @@ export const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-2xl border border-white/10 bg-slate-700/40 px-4 py-3 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="theme-input w-full rounded-2xl border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400"
                 placeholder="Enter your password"
               />
             </div>
@@ -84,7 +88,7 @@ export const LoginPage = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-400">
+            <p className="theme-muted">
               Don't have an account?{' '}
               <Link to="/signup" className="font-medium text-orange-300 hover:text-orange-200">
                 Sign up

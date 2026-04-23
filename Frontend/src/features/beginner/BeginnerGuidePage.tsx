@@ -5,8 +5,8 @@ import {
   type PracticeFile,
   type PracticeRunResult,
 } from '../../components/practice/CodePracticeWorkspace';
-
-type ThemeMode = 'dark' | 'light';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { useThemeMode } from '../../theme/ThemeProvider';
 
 interface LessonTask {
   id: string;
@@ -228,7 +228,7 @@ const getLessonStatus = (lessonIndex: number, completedLessons: string[]) => {
 };
 
 export const BeginnerGuidePage = () => {
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const { theme } = useThemeMode();
   const [selectedLessonId, setSelectedLessonId] = useState(lessons[0].id);
   const [activeFileByLesson, setActiveFileByLesson] = useState<Record<string, string>>(
     Object.fromEntries(lessons.map((lesson) => [lesson.id, lesson.focusFileId]))
@@ -389,16 +389,7 @@ export const BeginnerGuidePage = () => {
             <h1 className="mt-1 text-lg font-semibold">HTML and CSS Developer Track</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                theme === 'dark'
-                  ? 'border-white/10 bg-white/5 hover:bg-white/10'
-                  : 'border-orange-200 bg-white hover:bg-orange-50'
-              }`}
-            >
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            </button>
+            <ThemeToggle />
             <Link to="/" className="glow-button rounded-full px-5 py-2 text-sm font-semibold text-white">
               Back to landing
             </Link>

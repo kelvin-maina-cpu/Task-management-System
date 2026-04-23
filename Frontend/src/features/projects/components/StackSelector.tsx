@@ -8,14 +8,8 @@ interface StackSelectorProps {
 
 export const StackSelector = ({ stacks, selected, onSelect }: StackSelectorProps) => {
   if (!stacks || stacks.length === 0) {
-    return (
-      <div className="text-gray-400 text-sm py-4">
-        No stack recommendations available for this project.
-      </div>
-    );
+    return <div className="theme-muted py-4 text-sm">No stack recommendations available for this project.</div>;
   }
-
-  console.log('StackSelector stacks:', stacks.map(s => s.name)); // Debug duplicates
 
   return (
     <div className="space-y-3">
@@ -23,81 +17,64 @@ export const StackSelector = ({ stacks, selected, onSelect }: StackSelectorProps
         <div
           key={stack.name || `stack-${index}`}
           onClick={() => onSelect(stack)}
-          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-            selected?.name === stack.name
-              ? 'border-purple-500 bg-purple-500/10'
-              : 'border-white/10 bg-slate-800/50 hover:border-purple-500/50'
+          className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+            selected?.name === stack.name ? 'border-purple-500 bg-purple-500/10' : 'theme-card theme-card-hover'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-bold text-white">{stack.name}</h4>
-            {stack.category && (
-              <span className="text-xs px-2 py-1 bg-slate-700 text-gray-300 rounded">
-                {stack.category}
-              </span>
-            )}
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="font-bold">{stack.name}</h4>
+            {stack.category && <span className="theme-subcard rounded border px-2 py-1 text-xs">{stack.category}</span>}
           </div>
-          
-          <div className="flex flex-wrap gap-2 mb-3">
+
+          <div className="mb-3 flex flex-wrap gap-2">
             {stack.technologies?.slice(0, 4).map((tech, techIndex) => (
-              <span 
-                key={tech.name || `tech-${techIndex}`} 
-                className="text-xs bg-slate-700/50 px-2 py-1 rounded text-gray-300"
-              >
+              <span key={tech.name || `tech-${techIndex}`} className="theme-subcard rounded border px-2 py-1 text-xs">
                 {tech.name}
-                {tech.version && <span className="text-gray-500"> ({tech.version})</span>}
+                {tech.version && <span className="theme-soft"> ({tech.version})</span>}
               </span>
             ))}
-            {stack.technologies && stack.technologies.length > 4 && (
-              <span className="text-xs text-gray-500">+{stack.technologies.length - 4}</span>
-            )}
+            {stack.technologies && stack.technologies.length > 4 && <span className="theme-soft text-xs">+{stack.technologies.length - 4}</span>}
           </div>
 
           {stack.architecture?.pattern && (
-            <div className="text-sm text-gray-400 mb-2">
-              <span className="font-medium text-gray-300">Architecture:</span> {stack.architecture.pattern}
+            <div className="theme-muted mb-2 text-sm">
+              <span className="font-medium">Architecture:</span> {stack.architecture.pattern}
             </div>
           )}
 
-          {stack.whenToChoose && (
-            <p className="text-xs text-gray-500">{stack.whenToChoose}</p>
-          )}
+          {stack.whenToChoose && <p className="theme-soft text-xs">{stack.whenToChoose}</p>}
 
           {selected?.name === stack.name && (
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <h5 className="font-semibold text-sm text-white mb-2">Technology Details:</h5>
+            <div className="theme-divider mt-4 border-t pt-4">
+              <h5 className="mb-2 text-sm font-semibold">Technology Details:</h5>
               <ul className="space-y-2 text-sm">
                 {stack.technologies?.map((tech, techIndex) => (
-                  <li key={tech.name || `tech-detail-${techIndex}`} className="flex justify-between items-start">
-                    <span className="text-gray-300">
+                  <li key={tech.name || `tech-detail-${techIndex}`} className="flex items-start justify-between">
+                    <span className="theme-muted">
                       {tech.name}
-                      {tech.version && <span className="text-gray-500 text-xs"> ({tech.version})</span>}
+                      {tech.version && <span className="theme-soft text-xs"> ({tech.version})</span>}
                     </span>
-                    {tech.purpose && (
-                      <span className="text-gray-500 text-xs text-right max-w-[60%]">
-                        {tech.purpose}
-                      </span>
-                    )}
+                    {tech.purpose && <span className="theme-soft max-w-[60%] text-right text-xs">{tech.purpose}</span>}
                   </li>
                 ))}
               </ul>
-              
+
               {stack.pros && stack.pros.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-green-400 font-semibold">✓ Pros:</span>
+                    <span className="font-semibold text-green-400">Pros:</span>
                     <ul className="mt-1 space-y-0.5">
-                      {stack.pros.slice(0, 3).map((p, prosIndex) => (
-                        <li key={`pros-${prosIndex}`} className="text-gray-400">• {p}</li>
+                      {stack.pros.slice(0, 3).map((item, prosIndex) => (
+                        <li key={`pros-${prosIndex}`} className="theme-muted">• {item}</li>
                       ))}
                     </ul>
                   </div>
                   {stack.cons && stack.cons.length > 0 && (
                     <div>
-                      <span className="text-red-400 font-semibold">✗ Cons:</span>
+                      <span className="font-semibold text-red-400">Cons:</span>
                       <ul className="mt-1 space-y-0.5">
-                        {stack.cons.slice(0, 3).map((c, consIndex) => (
-                          <li key={`cons-${consIndex}`} className="text-gray-400">• {c}</li>
+                        {stack.cons.slice(0, 3).map((item, consIndex) => (
+                          <li key={`cons-${consIndex}`} className="theme-muted">• {item}</li>
                         ))}
                       </ul>
                     </div>

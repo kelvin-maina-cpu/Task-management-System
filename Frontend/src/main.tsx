@@ -7,6 +7,7 @@ import { router } from './app/router';
 import { setCredentials } from './features/auth/authSlice';
 import { useGetCurrentUserQuery } from './features/auth/authApi';
 import Loader from './components/Loader';
+import { ThemeProvider } from './theme/ThemeProvider';
 import './index.css';
 import './styles/loader.css';
 
@@ -41,10 +42,12 @@ const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Provider store={store}>
-      <AuthInitializer>
-        <RouterProvider router={router} />
-      </AuthInitializer>
-    </Provider>
+    <ThemeProvider>
+      <Provider store={store}>
+        <AuthInitializer>
+          <RouterProvider router={router} />
+        </AuthInitializer>
+      </Provider>
+    </ThemeProvider>
   </StrictMode>
 );
