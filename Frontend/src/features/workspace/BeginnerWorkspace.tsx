@@ -1,319 +1,231 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DevSpace, type FileItem } from '../../components/devspace/DevSpace';
+import React, { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { DevSpace } from '../../components/devspace/DevSpace';
+import {
+  BEGINNER_PROGRESS_KEY,
+  beginnerLessons,
+  createBeginnerWorkspaceState,
+  createBeginnerWorkspaceTree,
+  getBeginnerLessonStatus,
+} from '../beginner/beginnerLessons';
 import './BeginnerWorkspace.css';
 
-const beginnerFileTree: FileItem = {
-  name: 'beginner-projects',
-  type: 'folder',
-  children: [
-    {
-      name: 'lesson-1-html-basics',
-      type: 'folder',
-      children: [
-        {
-          name: 'index.html',
-          type: 'file',
-          content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My First HTML Page</title>
-</head>
-<body>
-    <h1>Welcome to Web Development!</h1>
-    <p>This is my first HTML page.</p>
-    <p>I'm learning the basics of HTML.</p>
-</body>
-</html>`,
-        },
-        {
-          name: 'README.md',
-          type: 'file',
-          content: `# Lesson 1: HTML Basics
+const readCompletedLessons = () => {
+  if (typeof window === 'undefined') return [];
 
-## Learning Objectives
-- Understand HTML structure
-- Learn basic HTML tags
-- Create your first webpage
+  try {
+    const stored = window.localStorage.getItem(BEGINNER_PROGRESS_KEY);
+    return stored ? (JSON.parse(stored) as string[]) : [];
+  } catch {
+    return [];
+  }
+};
 
-## Task
-Create a simple HTML page with:
-- A main heading
-- At least 2 paragraphs
-- Proper HTML structure
-
-## Tips
-- Use <h1> for main heading
-- Use <p> for paragraphs
-- Always include DOCTYPE declaration`,
-        },
-      ],
-    },
-    {
-      name: 'lesson-2-css-styling',
-      type: 'folder',
-      children: [
-        {
-          name: 'index.html',
-          type: 'file',
-          content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Styled Page</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <h1>Learn CSS</h1>
-    </header>
-    
-    <main>
-        <article>
-            <h2>Introduction to CSS</h2>
-            <p>CSS makes your website beautiful!</p>
-        </article>
-    </main>
-    
-    <footer>
-        <p>&copy; 2024 My Learning Project</p>
-    </footer>
-</body>
-</html>`,
-        },
-        {
-          name: 'style.css',
-          type: 'file',
-          content: `/* Basic styling */
-body {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-}
-
-header {
-    background-color: #333;
-    color: white;
-    padding: 1rem;
-    text-align: center;
-}
-
-main {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-
-article {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 1rem;
-    margin-top: 2rem;
-}`,
-        },
-        {
-          name: 'README.md',
-          type: 'file',
-          content: `# Lesson 2: CSS Styling
-
-## Learning Objectives
-- Add styles to HTML elements
-- Use CSS selectors
-- Understand the box model
-- Create layouts with CSS
-
-## Task
-1. Style the header with a background color
-2. Add margin and padding to articles
-3. Style the footer
-4. Make the page responsive with max-width
-
-## Tips
-- Use classes and IDs for styling
-- The box model: margin, border, padding, content
-- Colors can be hexadecimal (#333) or named (white)`,
-        },
-      ],
-    },
-    {
-      name: 'lesson-3-javascript-basics',
-      type: 'folder',
-      children: [
-        {
-          name: 'index.html',
-          type: 'file',
-          content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JavaScript Basics</title>
-</head>
-<body>
-    <h1>JavaScript Basics</h1>
-    
-    <div id="message"></div>
-    <button id="myButton">Click Me!</button>
-    
-    <script src="script.js"></script>
-</body>
-</html>`,
-        },
-        {
-          name: 'script.js',
-          type: 'file',
-          content: `// Your JavaScript code here
-
-// Example: Display a message when button is clicked
-const button = document.getElementById('myButton');
-const messageDiv = document.getElementById('message');
-
-button.addEventListener('click', function() {
-    messageDiv.textContent = 'Hello from JavaScript!';
-    console.log('Button clicked!');
-});
-
-// Variables and data types
-let name = 'Beginner Developer';
-let age = 20;
-let isLearning = true;
-
-console.log('My name is ' + name);
-console.log('I am ' + age + ' years old');
-
-// Functions
-function greet(personName) {
-    return 'Hello, ' + personName + '!';
-}
-
-console.log(greet('Sarah'));`,
-        },
-        {
-          name: 'README.md',
-          type: 'file',
-          content: `# Lesson 3: JavaScript Basics
-
-## Learning Objectives
-- Understand variables and data types
-- Write simple functions
-- Use DOM manipulation
-- Handle user events
-
-## Task
-1. Create a variable to store your name
-2. Write a function that greets a person
-3. Add a click event listener to the button
-4. Update the DOM with a message
-
-## Tips
-- Variables: let, const, var
-- Data types: string, number, boolean, object, array
-- Use console.log() for debugging
-- DOM methods: getElementById, addEventListener`,
-        },
-      ],
-    },
-  ],
+const getFileName = (filePath: string) => {
+  const parts = filePath.split('/').filter(Boolean);
+  return parts[parts.length - 1] ?? filePath;
 };
 
 export const BeginnerWorkspace: React.FC = () => {
   const navigate = useNavigate();
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedLessonId = searchParams.get('lesson');
+  const initialLesson = beginnerLessons.find((lesson) => lesson.id === requestedLessonId)?.id ?? beginnerLessons[0].id;
+  const [selectedLessonId, setSelectedLessonId] = useState(initialLesson);
+  const [completedLessons, setCompletedLessons] = useState<string[]>(readCompletedLessons);
+  const [workspaceFiles, setWorkspaceFiles] = useState(createBeginnerWorkspaceState);
+  const [runPassedByLesson, setRunPassedByLesson] = useState<Record<string, boolean>>({});
+  const [feedback, setFeedback] = useState('Open a lesson, edit the code in Dev Hub, then run the lesson check here.');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const handleCodeChange = useCallback((filePath: string, content: string) => {
-    // Save code changes - could be sent to backend
-    console.log(`Updated: ${filePath}`, content);
-    
-    // Track lesson progress
-    const lesson = filePath.split('/')[0];
-    if (!completedLessons.includes(lesson)) {
-      setCompletedLessons([...completedLessons, lesson]);
-    }
-  }, [completedLessons]);
+  const activeLessonIndex = beginnerLessons.findIndex((lesson) => lesson.id === selectedLessonId);
+  const activeLesson = beginnerLessons[activeLessonIndex] ?? beginnerLessons[0];
+  const activeStatus = getBeginnerLessonStatus(activeLessonIndex, completedLessons);
+  const nextLesson = beginnerLessons[activeLessonIndex + 1];
+  const fileTree = useMemo(
+    () => createBeginnerWorkspaceTree(activeLesson.id, workspaceFiles[activeLesson.id]),
+    [activeLesson.id, workspaceFiles]
+  );
 
-  const lessons = [
-    {
-      id: 'lesson-1-html-basics',
-      title: 'HTML Basics',
-      description: 'Learn the foundation of web pages with HTML',
-      difficulty: 'Beginner',
-      completed: completedLessons.includes('lesson-1-html-basics'),
-    },
-    {
-      id: 'lesson-2-css-styling',
-      title: 'CSS Styling',
-      description: 'Make your websites beautiful with CSS',
-      difficulty: 'Beginner',
-      completed: completedLessons.includes('lesson-2-css-styling'),
-    },
-    {
-      id: 'lesson-3-javascript-basics',
-      title: 'JavaScript Basics',
-      description: 'Add interactivity with JavaScript',
-      difficulty: 'Beginner',
-      completed: completedLessons.includes('lesson-3-javascript-basics'),
-    },
-  ];
+  const handleSelectLesson = (lessonId: string) => {
+    const lessonIndex = beginnerLessons.findIndex((lesson) => lesson.id === lessonId);
+
+    if (getBeginnerLessonStatus(lessonIndex, completedLessons) === 'locked') {
+      const previousLesson = beginnerLessons[lessonIndex - 1];
+      setFeedback(`Pass ${previousLesson.title} first to unlock this lesson.`);
+      return;
+    }
+
+    setSelectedLessonId(lessonId);
+    setSearchParams({ lesson: lessonId });
+    setFeedback('Lesson loaded in Dev Hub. Edit the code, then run the lesson check.');
+  };
+
+  const handleCodeChange = (filePath: string, content: string) => {
+    const fileId = getFileName(filePath);
+
+    setWorkspaceFiles((current) => ({
+      ...current,
+      [activeLesson.id]: (current[activeLesson.id] ?? activeLesson.files).map((file) =>
+        file.id === fileId ? { ...file, code: content } : file
+      ),
+    }));
+
+    setRunPassedByLesson((current) => ({
+      ...current,
+      [activeLesson.id]: false,
+    }));
+
+    setFeedback(`Updated ${fileId}. Keep going, then run the lesson check.`);
+  };
+
+  const handleRunLessonCheck = () => {
+    const focusFile = (workspaceFiles[activeLesson.id] ?? activeLesson.files).find(
+      (file) => file.id === activeLesson.focusFileId
+    );
+    const code = focusFile?.code ?? '';
+    const hasHints = activeLesson.expectedHints.every((hint) => code.includes(hint));
+
+    setRunPassedByLesson((current) => ({
+      ...current,
+      [activeLesson.id]: hasHints,
+    }));
+
+    setFeedback(
+      hasHints
+        ? 'Lesson check passed. Click "Pass lesson" to unlock the next one.'
+        : `This lesson still needs: ${activeLesson.expectedHints.join(', ')}.`
+    );
+  };
+
+  const handlePassLesson = () => {
+    if (!runPassedByLesson[activeLesson.id]) {
+      setFeedback('Run the lesson check successfully before passing the lesson.');
+      return;
+    }
+
+    setCompletedLessons((current) => {
+      const nextCompleted = current.includes(activeLesson.id) ? current : [...current, activeLesson.id];
+      window.localStorage.setItem(BEGINNER_PROGRESS_KEY, JSON.stringify(nextCompleted));
+      return nextCompleted;
+    });
+
+    if (nextLesson) {
+      setSelectedLessonId(nextLesson.id);
+      setSearchParams({ lesson: nextLesson.id });
+      setFeedback(`Lesson passed. ${nextLesson.title} is now unlocked in Dev Hub.`);
+      return;
+    }
+
+    setFeedback('You passed the final beginner lesson in Dev Hub.');
+  };
+
+  const lessons = beginnerLessons.map((lesson, index) => ({
+    ...lesson,
+    status: getBeginnerLessonStatus(index, completedLessons),
+  }));
 
   return (
     <div className={`beginner-workspace ${isFullscreen ? 'fullscreen-mode' : ''}`}>
       <div className="workspace-header">
         <div className="header-content">
           <button className="back-btn" onClick={() => navigate('/beginner')}>
-            ← Back
+            Back
           </button>
           <div>
-            <h1>Beginner Workspace</h1>
-            <p className="subtitle">Master the fundamentals of web development</p>
+            <h1>Beginner Dev Hub</h1>
+            <p className="subtitle">Interactive coding tests for the HTML and CSS track</p>
           </div>
         </div>
         <div className="progress-info">
           <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${(completedLessons.length / lessons.length) * 100}%` }}
+            <div
+              className="progress-fill"
+              style={{ width: `${(completedLessons.length / beginnerLessons.length) * 100}%` }}
             />
           </div>
-          <p>{completedLessons.length} of {lessons.length} lessons completed</p>
+          <p>{completedLessons.length} of {beginnerLessons.length} lessons passed</p>
         </div>
       </div>
 
       <div className="workspace-content">
         <aside className={`lessons-sidebar ${isFullscreen ? 'hidden-sidebar' : ''}`}>
-          <h2>Lessons</h2>
+          <h2>Dev Hub Lessons</h2>
           <div className="lessons-list">
             {lessons.map((lesson) => (
-              <div key={lesson.id} className={`lesson-card ${lesson.completed ? 'completed' : ''}`}>
+              <button
+                key={lesson.id}
+                type="button"
+                onClick={() => handleSelectLesson(lesson.id)}
+                className={`lesson-card ${lesson.status === 'complete' ? 'completed' : ''} ${
+                  lesson.id === activeLesson.id ? 'active' : ''
+                } ${lesson.status === 'locked' ? 'locked' : ''}`}
+              >
                 <div className="lesson-checkbox">
-                  {lesson.completed && <span className="check-icon">✓</span>}
+                  {lesson.status === 'complete' ? <span className="check-icon">✓</span> : <span>{lesson.order}</span>}
                 </div>
                 <div className="lesson-info">
                   <h3>{lesson.title}</h3>
-                  <p>{lesson.description}</p>
-                  <span className="difficulty-badge">{lesson.difficulty}</span>
+                  <p>{lesson.summary}</p>
+                  <span className="difficulty-badge">
+                    {lesson.status === 'complete' ? 'Passed' : lesson.status === 'locked' ? 'Locked' : lesson.duration}
+                  </span>
                 </div>
-              </div>
+              </button>
             ))}
+          </div>
+
+          <div className="lesson-brief">
+            <p className="brief-label">Current mission</p>
+            <h3>{activeLesson.title}</h3>
+            <p>{activeLesson.challenge}</p>
+          </div>
+
+          <div className="lesson-brief">
+            <p className="brief-label">Pass checklist</p>
+            {activeLesson.successCriteria.map((item) => (
+              <p key={item} className="brief-item">
+                {item}
+              </p>
+            ))}
+          </div>
+
+          <div className="lesson-brief">
+            <p className="brief-label">Required code signals</p>
+            <p>{activeLesson.expectedHints.join(', ')}</p>
+          </div>
+
+          <div className="lesson-brief">
+            <p className="brief-label">Lesson helper</p>
+            <p>{feedback}</p>
+          </div>
+
+          <div className="lesson-actions">
+            <button type="button" className="primary-action" onClick={handleRunLessonCheck}>
+              Run lesson check
+            </button>
+            <button type="button" className="secondary-action" onClick={handlePassLesson}>
+              Pass lesson
+            </button>
+          </div>
+
+          <div className="lesson-brief">
+            <p className="brief-label">Next unlock</p>
+            <p>{nextLesson ? nextLesson.title : 'You are on the final lesson.'}</p>
+            <p className="brief-status">
+              {activeStatus === 'complete'
+                ? 'This lesson is already passed.'
+                : runPassedByLesson[activeLesson.id]
+                  ? 'Lesson check is green and ready to pass.'
+                  : 'Edit the workspace and run the check to continue.'}
+            </p>
           </div>
         </aside>
 
         <main className="devspace-wrapper">
-          <DevSpace 
-            initialFileTree={beginnerFileTree}
+          <DevSpace
+            key={activeLesson.id}
+            initialFileTree={fileTree}
             onCodeChange={handleCodeChange}
             onFullscreenChange={setIsFullscreen}
           />

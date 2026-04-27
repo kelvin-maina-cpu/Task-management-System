@@ -116,17 +116,28 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  width: 100%;
   padding: 12px;
   background: #161b22;
   border: 1px solid #30363d;
   border-radius: 6px;
   cursor: pointer;
+  text-align: left;
   transition: all 0.2s;
 }
 
 .lesson-card:hover {
   background: #21262d;
   border-color: #58a6ff;
+}
+
+.lesson-card.active {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35);
+}
+
+.lesson-card.locked {
+  opacity: 0.55;
 }
 
 .lesson-card.completed {
@@ -183,6 +194,82 @@
   border-radius: 3px;
   font-size: 11px;
   font-weight: 600;
+}
+
+.lesson-brief {
+  margin-top: 14px;
+  padding: 14px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.lesson-brief h3 {
+  margin: 6px 0 8px;
+  font-size: 14px;
+}
+
+.lesson-brief p {
+  margin: 0;
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.brief-label {
+  margin-bottom: 8px;
+  color: #58a6ff !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.brief-item + .brief-item {
+  margin-top: 6px;
+}
+
+.brief-status {
+  margin-top: 8px !important;
+}
+
+.lesson-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.primary-action,
+.secondary-action {
+  width: 100%;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primary-action {
+  border: none;
+  background: linear-gradient(90deg, #f59e0b, #fb7185);
+  color: #0d1117;
+}
+
+.primary-action:hover {
+  transform: translateY(-1px);
+}
+
+.secondary-action {
+  border: 1px solid #30363d;
+  background: #0d1117;
+  color: #c9d1d9;
+}
+
+.secondary-action:hover {
+  border-color: #58a6ff;
+  background: #161b22;
 }
 
 .devspace-wrapper {
